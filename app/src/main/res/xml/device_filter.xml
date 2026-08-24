@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FLIR One for Android — USB VID 0x09cb / PID 0x1996 (2507 / 6550 decimal).
+    Confirmed via reverse-engineered protocol in fnoop/flirone-v4l2 and
+    Miso98/hw-flir-one-gen3 (both GPL-2.0-or-later). Not yet confirmed against
+    our own physical unit — that's what Step 1 verifies.
+-->
+<resources>
+    <usb-device vendor-id="2507" product-id="6550" />
+</resources>

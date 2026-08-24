@@ -1,0 +1,28 @@
+flir-one-android-viewer
+Copyright (C) 2026 bikbov-damir
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version. See LICENSE for the full text.
+
+This project's USB protocol implementation (endpoint layout, frame
+header format, control-transfer handshake, and the thermal pixel
+de-interleave logic) is a derivative work based on the reverse
+engineering published in two GPL-2.0-or-later projects:
+
+  - fnoop/flirone-v4l2
+    https://github.com/fnoop/flirone-v4l2
+    Copyright (C) 2015-2016 Thomas <tomas123 @ EEVblog Electronics
+    Community Forum>. Original protocol reverse-engineering credited in
+    that project to forum contributors tomas123 and cynfab.
+
+  - Miso98/hw-flir-one-gen3
+    https://github.com/Miso98/hw-flir-one-gen3
+    Based on flir-gtk (itself based on flir-v4l), Copyright (C) 2021
+    Nicole Faerber <nicole.faerber@dpin.de>, with 2024 additions for
+    FLIR One Gen 3 support by Mitchell (Miso98).
+
+Neither upstream project is affiliated with this one; this is an
+independent, unofficial reimplementation for Android. Not affiliated
+with or endorsed by Teledyne FLIR.
