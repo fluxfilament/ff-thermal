@@ -54,6 +54,11 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         const val MAX_LOG_LINES = 400
         const val PREFS = "flir-one-viewer"
         const val PREF_EMISSIVITY = "emissivity"
+        const val PREF_FOV_RATIO = "fovRatio"
+        const val PREF_PARALLAX_X = "parallaxX"
+
+        /** Alignment slider covers +/- this fraction of the visible frame's width. */
+        const val ALIGN_RANGE = 0.10f
     }
 
     private val prefs by lazy { getSharedPreferences(PREFS, Context.MODE_PRIVATE) }
@@ -65,12 +70,25 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     private lateinit var logScroll: ScrollView
     private lateinit var saveButton: Button
     private lateinit var paletteButton: Button
+    private lateinit var blendButton: Button
     private lateinit var logButton: Button
     private lateinit var emissivityLabel: TextView
     private lateinit var emissivitySeek: SeekBar
+    private lateinit var overlayControls: View
+    private lateinit var fovLabel: TextView
+    private lateinit var fovSeek: SeekBar
+    private lateinit var alignLabel: TextView
+    private lateinit var alignSeek: SeekBar
 
     private lateinit var camera: FlirOneCamera
     private val renderer = ThermalRenderer()
+    private val compositor = Compositor()
+
+    /** Snapshots get their own, so composing a file cannot race the live view. */
+    private val snapshotCompositor = Compositor()
+
+    /** Mixing the visible layer costs a JPEG decode per frame, so it starts off. */
+    private var blendMode = BlendMode.THERMAL
 
     /**
      * Coefficients for the unit this was developed on, with the user's emissivity
@@ -119,18 +137,27 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         logScroll = findViewById(R.id.logScroll)
         saveButton = findViewById(R.id.saveButton)
         paletteButton = findViewById(R.id.paletteButton)
+        blendButton = findViewById(R.id.blendButton)
         logButton = findViewById(R.id.logButton)
         emissivityLabel = findViewById(R.id.emissivityLabel)
         emissivitySeek = findViewById(R.id.emissivitySeek)
+        overlayControls = findViewById(R.id.overlayControls)
+        fovLabel = findViewById(R.id.fovLabel)
+        fovSeek = findViewById(R.id.fovSeek)
+        alignLabel = findViewById(R.id.alignLabel)
+        alignSeek = findViewById(R.id.alignSeek)
 
         usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
         camera = FlirOneCamera(usbManager, this)
 
         saveButton.setOnClickListener { saveSnapshot() }
         paletteButton.setOnClickListener { cyclePalette() }
+        blendButton.setOnClickListener { cycleBlend() }
         logButton.setOnClickListener { toggleLog() }
         updatePaletteButton()
+        updateBlendButton()
         setUpEmissivity()
+        setUpOverlayControls()
 
         val filter = IntentFilter().apply {
             addAction(ACTION_USB_PERMISSION)
@@ -210,7 +237,8 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         // Colourising is CPU work on a small array; do it here rather than hopping to
         // the UI thread with raw counts, and coalesce repaints so a slow frame does
         // not queue up behind a backlog of invalidates.
-        val bitmap = renderer.render(frame)
+        val thermal = renderer.render(frame)
+        val bitmap = compositor.compose(frame, thermal, blendMode) ?: thermal
         if (calibrating) {
             calibrating = false
             runOnUiThread { refreshStatus() }
@@ -305,7 +333,14 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
             toast(getString(R.string.nothing_to_save))
             return
         }
-        val bitmap = renderer.snapshot(frame)
+        // Save what is on screen: if the visible layer is mixed in, the file gets it
+        // too. A separate compositor because the live one is being written by the
+        // camera thread; it only has to carry the same alignment.
+        val thermal = renderer.snapshot(frame)
+        snapshotCompositor.fovRatio = compositor.fovRatio
+        snapshotCompositor.parallaxX = compositor.parallaxX
+        snapshotCompositor.parallaxY = compositor.parallaxY
+        val bitmap = snapshotCompositor.compose(frame, thermal, blendMode) ?: thermal
         saveButton.isEnabled = false
         thread(name = "flir-save") {
             val message = try {
@@ -333,13 +368,63 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     }
 
     private fun updatePaletteButton() {
-        paletteButton.text = getString(R.string.palette_button, renderer.palette.label)
+        paletteButton.text = renderer.palette.label
+    }
+
+    private fun cycleBlend() {
+        blendMode = blendMode.next()
+        updateBlendButton()
+        overlayControls.visibility =
+            if (blendMode == BlendMode.THERMAL) View.GONE else View.VISIBLE
+    }
+
+    private fun updateBlendButton() {
+        blendButton.text = blendMode.label
+    }
+
+    /**
+     * The two alignment controls. Both are remembered: the field-of-view crop is a
+     * property of this camera's optics that only needs finding once, and the parallax
+     * setting is usually left wherever the user's typical working distance puts it.
+     */
+    private fun setUpOverlayControls() {
+        compositor.fovRatio = prefs.getFloat(PREF_FOV_RATIO, Compositor.DEFAULT_FOV_RATIO)
+        compositor.parallaxX = prefs.getFloat(PREF_PARALLAX_X, 0f)
+        fovSeek.progress = (compositor.fovRatio * 100).roundToInt()
+        alignSeek.progress = ((compositor.parallaxX / ALIGN_RANGE + 1f) * 50f).roundToInt()
+        updateOverlayLabels()
+
+        fovSeek.setOnSeekBarChangeListener(seekListener({ progress ->
+            compositor.fovRatio = progress / 100f
+        }, { prefs.edit().putFloat(PREF_FOV_RATIO, compositor.fovRatio).apply() }))
+
+        alignSeek.setOnSeekBarChangeListener(seekListener({ progress ->
+            compositor.parallaxX = (progress / 50f - 1f) * ALIGN_RANGE
+        }, { prefs.edit().putFloat(PREF_PARALLAX_X, compositor.parallaxX).apply() }))
+    }
+
+    private fun seekListener(
+        onChange: (Int) -> Unit,
+        onCommit: () -> Unit,
+    ) = object : SeekBar.OnSeekBarChangeListener {
+        override fun onProgressChanged(bar: SeekBar, progress: Int, fromUser: Boolean) {
+            onChange(progress)
+            updateOverlayLabels()
+        }
+
+        override fun onStartTrackingTouch(bar: SeekBar) = Unit
+
+        override fun onStopTrackingTouch(bar: SeekBar) = onCommit()
+    }
+
+    private fun updateOverlayLabels() {
+        fovLabel.text = getString(R.string.fov_label, compositor.fovRatio)
+        alignLabel.text = getString(R.string.align_label, compositor.parallaxX)
     }
 
     private fun toggleLog() {
         val show = logScroll.visibility != View.VISIBLE
         logScroll.visibility = if (show) View.VISIBLE else View.GONE
-        logButton.setText(if (show) R.string.hide_log else R.string.show_log)
     }
 
     private fun refreshStatus() {

@@ -240,6 +240,7 @@ class FlirOneCamera(
                                     "Lepton telemetry rows"
                         )
                         listener.onLog("first frame status: ${status.raw}")
+                        listener.onLog("visible JPEG in-frame: $jpgSize bytes")
                     }
                     frames++
                     var min = Int.MAX_VALUE
@@ -248,6 +249,16 @@ class FlirOneCamera(
                         if (v < min) min = v
                         if (v > max) max = v
                     }
+                    // The assembler hands back its own reusable buffer, so anything
+                    // the frame keeps has to be copied out before the next read.
+                    val jpeg = if (jpgSize > 0) {
+                        buf.copyOfRange(
+                            FlirProtocol.FRAME_HEADER_BYTES + thermalSize,
+                            FlirProtocol.FRAME_HEADER_BYTES + thermalSize + jpgSize,
+                        )
+                    } else {
+                        null
+                    }
                     val frame = ThermalFrame(
                         width = info.width,
                         height = info.height,
@@ -255,6 +266,7 @@ class FlirOneCamera(
                         min = min,
                         max = max,
                         status = status,
+                        jpeg = jpeg,
                     )
                     lastFrame = frame
                     listener.onFrame(frame)

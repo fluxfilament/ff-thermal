@@ -2,12 +2,12 @@
 <resources>
     <string name="app_name">FLIR One Viewer</string>
     <string name="thermal_view_description">Live thermal image</string>
-    <string name="palette_button">Palette: %1$s</string>
+    <string name="fov_label">FOV %1$.2f</string>
+    <string name="align_label">Align %1$+.3f</string>
     <string name="emissivity_label">ε %1$.2f</string>
     <string name="save_button">Save</string>
     <string name="saved_to">Saved to %1$s</string>
     <string name="save_failed">Could not save: %1$s</string>
     <string name="nothing_to_save">No frame to save yet</string>
-    <string name="show_log">Show log</string>
-    <string name="hide_log">Hide log</string>
+    <string name="log_button">Log</string>
 </resources>

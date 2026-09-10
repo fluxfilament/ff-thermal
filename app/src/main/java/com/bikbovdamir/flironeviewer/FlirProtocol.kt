@@ -194,6 +194,11 @@ class ThermalFrame(
     val min: Int,
     val max: Int,
     val status: FrameStatus,
+    /**
+     * The visible-light JPEG the camera sends alongside the thermal data in the same
+     * frame. Its own lens, so it does not line up with the thermal image by itself.
+     */
+    val jpeg: ByteArray?,
 ) {
     /**
      * Spot reading at the centre of the frame, averaged over the middle four pixels
