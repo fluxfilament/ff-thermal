@@ -98,16 +98,35 @@ class ThermalRenderer {
             smoothedMax += boundsAdapt * (frame.max - smoothedMax)
         }
 
-        val lo = smoothedMin
-        val span = (smoothedMax - smoothedMin).coerceAtLeast(1f)
-        val lut = palette.lut
-        val raw = frame.raw
-        for (i in argb.indices) {
-            val v = (((raw[i] - lo) / span) * 255f).toInt().coerceIn(0, 255)
-            argb[i] = lut[v]
-        }
+        colourise(frame, argb)
         bmp.setPixels(argb, 0, frame.width, 0, 0, frame.width, frame.height)
         return bmp
+    }
+
+    /**
+     * Renders [frame] into a bitmap of its own, leaving the live one alone.
+     *
+     * A snapshot cannot share the display bitmap: the camera thread keeps drawing
+     * into it, so compressing it would race the next frame and could save a torn
+     * image. Contrast bounds are read but not advanced, so the file matches what
+     * was on screen when the shutter was pressed.
+     */
+    fun snapshot(frame: ThermalFrame): Bitmap {
+        val pixels = IntArray(frame.width * frame.height)
+        colourise(frame, pixels)
+        return Bitmap.createBitmap(pixels, frame.width, frame.height, Bitmap.Config.ARGB_8888)
+    }
+
+    private fun colourise(frame: ThermalFrame, into: IntArray) {
+        val lo = if (haveBounds) smoothedMin else frame.min.toFloat()
+        val hi = if (haveBounds) smoothedMax else frame.max.toFloat()
+        val span = (hi - lo).coerceAtLeast(1f)
+        val lut = palette.lut
+        val raw = frame.raw
+        for (i in into.indices) {
+            val v = (((raw[i] - lo) / span) * 255f).toInt().coerceIn(0, 255)
+            into[i] = lut[v]
+        }
     }
 
     /** Forgets the rolling contrast bounds, e.g. after the shutter recalibrates. */

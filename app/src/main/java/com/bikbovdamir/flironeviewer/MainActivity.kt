@@ -34,7 +34,9 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.concurrent.thread
 
 /**
  * Live view. Step 1 proved the protocol on real hardware; this screen is Step 2 -
@@ -55,6 +57,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     private lateinit var statusView: TextView
     private lateinit var logView: TextView
     private lateinit var logScroll: ScrollView
+    private lateinit var saveButton: Button
     private lateinit var paletteButton: Button
     private lateinit var logButton: Button
 
@@ -105,12 +108,14 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         statusView = findViewById(R.id.statusView)
         logView = findViewById(R.id.logView)
         logScroll = findViewById(R.id.logScroll)
+        saveButton = findViewById(R.id.saveButton)
         paletteButton = findViewById(R.id.paletteButton)
         logButton = findViewById(R.id.logButton)
 
         usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
         camera = FlirOneCamera(usbManager, this)
 
+        saveButton.setOnClickListener { saveSnapshot() }
         paletteButton.setOnClickListener { cyclePalette() }
         logButton.setOnClickListener { toggleLog() }
         updatePaletteButton()
@@ -240,6 +245,41 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         } else {
             imageView.invalidate()
         }
+    }
+
+    /**
+     * Captures the frame currently on screen and writes it to the gallery.
+     *
+     * The frame is grabbed synchronously so the file matches what the user was
+     * looking at when they pressed the button, but the encode and the write go to a
+     * background thread - PNG compression on the UI thread would stutter the live
+     * view at the exact moment the user is holding the camera still.
+     */
+    private fun saveSnapshot() {
+        val frame = camera.lastFrame
+        if (frame == null) {
+            toast(getString(R.string.nothing_to_save))
+            return
+        }
+        val bitmap = renderer.snapshot(frame)
+        saveButton.isEnabled = false
+        thread(name = "flir-save") {
+            val message = try {
+                getString(R.string.saved_to, SnapshotSaver.save(this, bitmap).displayPath)
+            } catch (e: Exception) {
+                Log.e(TAG, "snapshot save failed", e)
+                getString(R.string.save_failed, e.message ?: e.javaClass.simpleName)
+            }
+            runOnUiThread {
+                saveButton.isEnabled = true
+                toast(message)
+                onLog(message)
+            }
+        }
+    }
+
+    private fun toast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 
     private fun cyclePalette() {
