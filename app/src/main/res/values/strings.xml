@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">FLIR One Viewer</string>
+    <string name="thermal_view_description">Live thermal image</string>
+    <string name="palette_button">Palette: %1$s</string>
+    <string name="layout_button">Layout: %1$s</string>
+    <string name="layout_vospi">VoSPI</string>
+    <string name="layout_shifted">gen3 shift</string>
+    <string name="show_log">Show log</string>
+    <string name="hide_log">Hide log</string>
 </resources>
