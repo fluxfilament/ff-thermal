@@ -11,6 +11,8 @@
     <string name="save_failed">Could not save: %1$s</string>
     <string name="nothing_to_save">No frame to save yet</string>
     <string name="log_button">Log</string>
+    <string name="spot_minus">Spot −</string>
+    <string name="spot_plus">Spot +</string>
     <string name="mirror_on">Mirror ✓</string>
     <string name="mirror_off">Mirror</string>
 </resources>

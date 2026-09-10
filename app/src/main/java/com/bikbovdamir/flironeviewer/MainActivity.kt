@@ -23,8 +23,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
-import android.graphics.Matrix
-import android.graphics.drawable.BitmapDrawable
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.os.Build
@@ -32,7 +30,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Button
-import android.widget.ImageView
 import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.TextView
@@ -58,6 +55,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         const val PREF_FOV_RATIO = "fovRatio"
         const val PREF_PARALLAX = "parallax"
         const val PREF_ROTATION = "rotation"
+        const val PREF_SPOTS = "spots"
         const val PREF_MIRRORED = "mirrored"
 
         /** Alignment slider covers +/- this fraction of the visible frame's width. */
@@ -67,7 +65,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     private val prefs by lazy { getSharedPreferences(PREFS, Context.MODE_PRIVATE) }
 
     private lateinit var usbManager: UsbManager
-    private lateinit var imageView: ImageView
+    private lateinit var thermalView: ThermalView
     private lateinit var statusView: TextView
     private lateinit var logView: TextView
     private lateinit var logScroll: ScrollView
@@ -76,6 +74,8 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     private lateinit var blendButton: Button
     private lateinit var mirrorButton: Button
     private lateinit var rotateButton: Button
+    private lateinit var spotMinusButton: Button
+    private lateinit var spotPlusButton: Button
     private lateinit var logButton: Button
     private lateinit var emissivityLabel: TextView
     private lateinit var emissivitySeek: SeekBar
@@ -107,13 +107,14 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
      */
     private var rotation = ViewTransform.DEFAULT_ROTATION
 
-    private val imageMatrix = Matrix()
+    private val spotMeter = SpotMeter()
 
     /**
      * Coefficients for the unit this was developed on, with the user's emissivity
      * applied on top. Readings from another camera will be off - see [Planck] for how
      * to read its own out of a saved JPEG.
      */
+    @Volatile
     private var planck = Planck.DEVELOPMENT_UNIT
 
     private val logLines = ArrayDeque<String>()
@@ -150,7 +151,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        imageView = findViewById(R.id.thermalView)
+        thermalView = findViewById(R.id.thermalView)
         statusView = findViewById(R.id.statusView)
         logView = findViewById(R.id.logView)
         logScroll = findViewById(R.id.logScroll)
@@ -159,6 +160,8 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         blendButton = findViewById(R.id.blendButton)
         mirrorButton = findViewById(R.id.mirrorButton)
         rotateButton = findViewById(R.id.rotateButton)
+        spotMinusButton = findViewById(R.id.spotMinusButton)
+        spotPlusButton = findViewById(R.id.spotPlusButton)
         logButton = findViewById(R.id.logButton)
         emissivityLabel = findViewById(R.id.emissivityLabel)
         emissivitySeek = findViewById(R.id.emissivitySeek)
@@ -176,15 +179,23 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         blendButton.setOnClickListener { cycleBlend() }
         mirrorButton.setOnClickListener { toggleMirror() }
         rotateButton.setOnClickListener { cycleRotation() }
+        spotMinusButton.setOnClickListener { if (spotMeter.remove()) onSpotCountChanged() }
+        spotPlusButton.setOnClickListener { if (spotMeter.add()) onSpotCountChanged() }
+        thermalView.onSpotMoved = { index, u, v -> spotMeter.move(index, u, v) }
         logButton.setOnClickListener { toggleLog() }
         mirrored = prefs.getBoolean(PREF_MIRRORED, true)
         rotation = prefs.getInt(PREF_ROTATION, ViewTransform.DEFAULT_ROTATION)
+        // Defaults are laid out as the viewer sees them, so the meter has to know
+        // which way the picture is turned before it places any.
+        spotMeter.rotation = rotation
+        spotMeter.mirrored = mirrored
+        spotMeter.setCount(prefs.getInt(PREF_SPOTS, 1))
         updatePaletteButton()
         updateBlendButton()
         updateMirrorButton()
         updateRotateButton()
-        // The view has no size until it is laid out, and the fit depends on it.
-        imageView.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> updateImageMatrix() }
+        onSpotCountChanged()
+
         setUpEmissivity()
         setUpOverlayControls()
 
@@ -272,10 +283,12 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
             calibrating = false
             runOnUiThread { refreshStatus() }
         }
+        val labels = spotLabels(frame)
         if (repaintPending.compareAndSet(false, true)) {
             runOnUiThread {
                 repaintPending.set(false)
-                showBitmap(bitmap)
+                thermalView.spots = labels
+                thermalView.setImage(bitmap, rotation, mirrored)
             }
         }
     }
@@ -304,16 +317,22 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
 
     // --- UI -----------------------------------------------------------------------
 
-    private fun showBitmap(bitmap: Bitmap) {
-        val current = (imageView.drawable as? BitmapDrawable)?.bitmap
-        if (current !== bitmap) {
-            imageView.setImageBitmap(bitmap)
-            // 80x60 blown up to a phone screen: interpolation just smears the pixels,
-            // and a wrong de-interleave has to stay visible as hard banding.
-            (imageView.drawable as? BitmapDrawable)?.isFilterBitmap = false
-            updateImageMatrix()
-        } else {
-            imageView.invalidate()
+    private fun onSpotCountChanged() {
+        prefs.edit().putInt(PREF_SPOTS, spotMeter.count).apply()
+        spotMinusButton.isEnabled = spotMeter.count > 0
+        spotPlusButton.isEnabled = spotMeter.count < 9
+    }
+
+    /**
+     * Reads each spot off the frame. Done on the camera thread with the frame in
+     * hand, so the numbers on screen belong to the picture under them rather than to
+     * whatever frame happened to be current when the UI got round to drawing.
+     */
+    private fun spotLabels(frame: ThermalFrame): List<SpotLabel> {
+        val calibration = planck
+        return spotMeter.positions().mapIndexed { index, spot ->
+            val celsius = calibration.rawToCelsius(frame.rawAt(spot.u, spot.v))
+            SpotLabel(spot.u, spot.v, index + 1, "%.1f°C".format(celsius))
         }
     }
 
@@ -414,18 +433,17 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
 
     private fun toggleMirror() {
         mirrored = !mirrored
+        spotMeter.mirrored = mirrored
         prefs.edit().putBoolean(PREF_MIRRORED, mirrored).apply()
         updateMirrorButton()
-        updateRotateButton()
-        updateImageMatrix()
     }
 
     private fun cycleRotation() {
         val next = ViewTransform.ROTATIONS.indexOf(rotation) + 1
         rotation = ViewTransform.ROTATIONS[next % ViewTransform.ROTATIONS.size]
+        spotMeter.rotation = rotation
         prefs.edit().putInt(PREF_ROTATION, rotation).apply()
         updateRotateButton()
-        updateImageMatrix()
     }
 
     private fun updateRotateButton() {
@@ -434,29 +452,6 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
 
     private fun updateMirrorButton() {
         mirrorButton.setText(if (mirrored) R.string.mirror_on else R.string.mirror_off)
-    }
-
-    /**
-     * Positions the picture in the view: turned upright for how the camera is
-     * mounted, mirrored if asked, scaled to fit. Nothing here touches pixels - it is
-     * a matrix on the view, so it costs nothing per frame.
-     */
-    private fun updateImageMatrix() {
-        val drawable = imageView.drawable ?: return
-        val srcW = drawable.intrinsicWidth.toFloat()
-        val srcH = drawable.intrinsicHeight.toFloat()
-        val viewW = imageView.width.toFloat()
-        val viewH = imageView.height.toFloat()
-        if (srcW <= 0f || srcH <= 0f || viewW <= 0f || viewH <= 0f) return
-        imageView.imageMatrix = ViewTransform.matrixFor(
-            srcW = srcW,
-            srcH = srcH,
-            viewW = viewW,
-            viewH = viewH,
-            rotation = rotation,
-            mirrored = mirrored,
-            into = imageMatrix,
-        )
     }
 
     /**

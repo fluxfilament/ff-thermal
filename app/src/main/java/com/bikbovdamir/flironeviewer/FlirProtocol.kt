@@ -215,6 +215,31 @@ class ThermalFrame(
             val d = raw[cy * width + cx]
             return (a + b + c + d) / 4
         }
+
+    /**
+     * Raw counts at a point given as a fraction of the frame in each axis, averaged
+     * over the three-by-three block around it.
+     *
+     * Averaged because a single detector at 80x60 visibly jitters between frames, and
+     * a spot reading that will not sit still is hard to trust. The cost is that the
+     * figure smears across a hard temperature edge - a reading taken right on the rim
+     * of something hot is a blend of both sides, not the rim.
+     */
+    fun rawAt(u: Float, v: Float): Int {
+        val cx = (u * width).toInt().coerceIn(0, width - 1)
+        val cy = (v * height).toInt().coerceIn(0, height - 1)
+        var sum = 0
+        var n = 0
+        for (y in (cy - 1)..(cy + 1)) {
+            if (y !in 0 until height) continue
+            for (x in (cx - 1)..(cx + 1)) {
+                if (x !in 0 until width) continue
+                sum += raw[y * width + x]
+                n++
+            }
+        }
+        return if (n == 0) raw[cy * width + cx] else sum / n
+    }
 }
 
 /**
