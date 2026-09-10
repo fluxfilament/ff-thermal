@@ -3,7 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#000000">
+    android:background="#000000"
+    android:keepScreenOn="true">
 
     <TextView
         android:id="@+id/statusView"
@@ -30,12 +31,6 @@
 
         <Button
             android:id="@+id/paletteButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1" />
-
-        <Button
-            android:id="@+id/layoutButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1" />

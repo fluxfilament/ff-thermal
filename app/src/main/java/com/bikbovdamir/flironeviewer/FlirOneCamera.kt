@@ -68,6 +68,15 @@ class FlirOneCamera(
 
         /** No whole frame for this long means the stream wedged; restart the interfaces. */
         const val STALL_RESTART_MS = 3_000L
+
+        /**
+         * Shorter fuse until the first frame ever arrives. Re-opening the camera while
+         * it is still streaming from a previous session reliably ignores the first
+         * request for video, so on a warm start the watchdog is the normal way into the
+         * stream rather than an emergency - no reason to sit out the full stall timeout.
+         */
+        const val FIRST_FRAME_RETRY_MS = 800L
+
         const val STATS_INTERVAL_MS = 1_000L
 
         /**
@@ -84,10 +93,6 @@ class FlirOneCamera(
     @Volatile
     private var running = false
     private var worker: Thread? = null
-
-    /** Switchable from the UI so the two candidate pixel layouts can be compared live. */
-    @Volatile
-    var layout: FlirProtocol.Layout = FlirProtocol.Layout.VOSPI
 
     /** Latest raw counts, kept so a snapshot can be taken off the UI thread later. */
     @Volatile
@@ -212,7 +217,6 @@ class FlirOneCamera(
                     height = info.height,
                     littleEndian = !info.bigEndianThermal,
                     into = pixels,
-                    layout = layout,
                 )
                 if (!ok) {
                     if (decodeFailures++ == 0) {
@@ -287,8 +291,9 @@ class FlirOneCamera(
                 lastFrameAt = now
             }
 
-            if (now - lastFrameAt > STALL_RESTART_MS) {
-                listener.onLog("No frames for ${STALL_RESTART_MS / 1000}s - restarting the interfaces.")
+            val fuse = if (assembler.completed == 0) FIRST_FRAME_RETRY_MS else STALL_RESTART_MS
+            if (now - lastFrameAt > fuse) {
+                listener.onLog("No frames for ${fuse}ms - restarting the interfaces.")
                 startInterfaces(connection)
                 requestVideoStream(connection)
                 lastFrameAt = now

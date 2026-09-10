@@ -56,7 +56,6 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     private lateinit var logView: TextView
     private lateinit var logScroll: ScrollView
     private lateinit var paletteButton: Button
-    private lateinit var layoutButton: Button
     private lateinit var logButton: Button
 
     private lateinit var camera: FlirOneCamera
@@ -101,17 +100,14 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         logView = findViewById(R.id.logView)
         logScroll = findViewById(R.id.logScroll)
         paletteButton = findViewById(R.id.paletteButton)
-        layoutButton = findViewById(R.id.layoutButton)
         logButton = findViewById(R.id.logButton)
 
         usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
         camera = FlirOneCamera(usbManager, this)
 
         paletteButton.setOnClickListener { cyclePalette() }
-        layoutButton.setOnClickListener { toggleLayout() }
         logButton.setOnClickListener { toggleLog() }
         updatePaletteButton()
-        updateLayoutButton()
 
         val filter = IntentFilter().apply {
             addAction(ACTION_USB_PERMISSION)
@@ -248,29 +244,6 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
 
     private fun updatePaletteButton() {
         paletteButton.text = getString(R.string.palette_button, renderer.palette.label)
-    }
-
-    /**
-     * Flips between the two candidate pixel layouts. Whichever produces a coherent
-     * image - rather than a right half sheared by two pixels - is the correct one for
-     * this sensor, and that is the whole point of having the toggle.
-     */
-    private fun toggleLayout() {
-        camera.layout = if (camera.layout == FlirProtocol.Layout.VOSPI) {
-            FlirProtocol.Layout.HALF_ROW_SHIFT
-        } else {
-            FlirProtocol.Layout.VOSPI
-        }
-        updateLayoutButton()
-        onLog("Pixel layout switched to ${camera.layout}")
-    }
-
-    private fun updateLayoutButton() {
-        val name = getString(
-            if (camera.layout == FlirProtocol.Layout.VOSPI) R.string.layout_vospi
-            else R.string.layout_shifted
-        )
-        layoutButton.text = getString(R.string.layout_button, name)
     }
 
     private fun toggleLog() {

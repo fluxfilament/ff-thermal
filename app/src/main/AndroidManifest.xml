@@ -8,10 +8,17 @@
         android:label="@string/app_name"
         android:theme="@android:style/Theme.DeviceDefault">
 
+        <!--
+            configChanges: recreating the activity tears down the USB connection and
+            re-opens it mid-stream, which costs a stall and loses the one-shot
+            sledInformation message. A rotation is not worth that.
+            keepScreenOn: a live view the user is pointing at things should not time out.
+        -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTop">
+            android:launchMode="singleTop"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

@@ -88,19 +88,6 @@ object FlirProtocol {
         packetsPerRow(width) * height * VOSPI_PACKET_BYTES
 
     /**
-     * Two readings of the same bytes, kept switchable so the difference can be settled
-     * by looking at the sensor rather than by argument.
-     *
-     * [VOSPI] is the packet model above. [HALF_ROW_SHIFT] is what hw-flir-one-gen3 does
-     * for an 80-wide sensor: it keeps flirone-v4l2's extra 4-byte skip at the midpoint
-     * of the row. On a 160-wide sensor that skip is real - it is the second packet's own
-     * header - but on an 80-wide sensor one packet already holds the whole row, so the
-     * skip looks like a copy-paste of the Lepton 3 code that would shear the right half
-     * of the image by two pixels. Only hardware can confirm that, so both are offered.
-     */
-    enum class Layout { VOSPI, HALF_ROW_SHIFT }
-
-    /**
      * De-interleaves the VoSPI packet stream into a plain row-major array of raw
      * 16-bit sensor counts. [frame] is a whole reassembled EP 0x85 frame, magic
      * bytes included, so the thermal payload starts at [FRAME_HEADER_BYTES].
@@ -108,6 +95,17 @@ object FlirProtocol {
      * Returns false when the payload is too short for the claimed geometry - that
      * means the geometry (or this packet model) is wrong, and rendering garbage
      * would be worse than showing nothing.
+     *
+     * Note what this deliberately does NOT do on an 80-wide sensor: hw-flir-one-gen3
+     * keeps flirone-v4l2's extra 4-byte skip at the midpoint of the row. On a 160-wide
+     * sensor that skip is real - it is the second packet's own header - but at 80 wide
+     * one packet already holds the entire row, so the skip pushes the last two pixels
+     * past the end of the packet and into the *next* packet's ID and CRC. Measured on
+     * this unit: with the skip, the per-column standard deviation of the last two
+     * columns is 17 and 81 against a scene-noise baseline of 0.6 - the ID being a
+     * sequence number and the CRC being effectively random, exactly as the packet model
+     * predicts. Without it, those columns sit at the baseline. So the skip is an
+     * upstream bug at this width, not a variant worth supporting.
      */
     fun deinterleave(
         frame: ByteArray,
@@ -116,30 +114,19 @@ object FlirProtocol {
         height: Int,
         littleEndian: Boolean,
         into: IntArray,
-        layout: Layout = Layout.VOSPI,
     ): Boolean {
         if (into.size < width * height) return false
-        val rowBytes = packetsPerRow(width) * VOSPI_PACKET_BYTES
-        val needed = when (layout) {
-            Layout.VOSPI -> rowBytes * height
-            // The shifted reading runs 4 bytes past the last row it addresses.
-            Layout.HALF_ROW_SHIFT -> rowBytes * height + VOSPI_PACKET_HEADER_BYTES
-        }
-        if (thermalSize < needed) return false
+        if (thermalSize < imageBytes(width, height)) return false
 
         val packetsPerRow = packetsPerRow(width)
-        val half = width / 2
         var out = 0
         for (y in 0 until height) {
             for (x in 0 until width) {
                 val packet = y * packetsPerRow + x / VOSPI_PIXELS_PER_PACKET
-                var at = FRAME_HEADER_BYTES +
+                val at = FRAME_HEADER_BYTES +
                         packet * VOSPI_PACKET_BYTES +
                         VOSPI_PACKET_HEADER_BYTES +
                         2 * (x % VOSPI_PIXELS_PER_PACKET)
-                if (layout == Layout.HALF_ROW_SHIFT && packetsPerRow == 1 && x >= half) {
-                    at += VOSPI_PACKET_HEADER_BYTES
-                }
                 val lo = frame[at].toInt() and 0xff
                 val hi = frame[at + 1].toInt() and 0xff
                 into[out++] = if (littleEndian) lo or (hi shl 8) else hi or (lo shl 8)
