@@ -23,12 +23,16 @@ import kotlin.math.min
 /**
  * How the sensor image is turned before anyone looks at it.
  *
- * Both the rotation and the mirroring are settings rather than constants, and the
- * reason is the connector: USB-C plugs in either way up. Turn the dongle over and
- * the sensor turns with it - the picture arrives 180 degrees round, and the camera
- * now looks the other way, so what was a front camera wanting a mirror becomes a
- * rear one that must not have it. No amount of code can tell which way it was
- * pushed in, so the user says.
+ * USB-C plugs in either way up, and the dongle can therefore face towards its owner
+ * or away. Tested both ways on the hardware: the rotation is the same either way -
+ * up stays up - and only the mirroring changes, because facing the other way is what
+ * turns the camera into a front camera. So the mirror switch is the one that matters in
+ * daily use, and it wants to be on in the facing-you position.
+ *
+ * The rotation is a setting too, but for a duller reason: nothing in the code can
+ * know how the sensor is oriented in some future dongle or adapter, and one tap is
+ * cheaper than a rebuild. [DEFAULT_ROTATION] is right for this camera in both
+ * positions.
  *
  * There is deliberately no compensation for how the phone is being *held*. The
  * camera is bolted to the phone and the window is locked to portrait, so turning the
@@ -39,14 +43,18 @@ import kotlin.math.min
  *
  * Mirroring is applied after the rotation, in what the viewer sees, so the toggle
  * flips left and right on screen whichever way the picture has been turned.
+ *
+ * Nothing here compensates for a saved photo coming out sideways when the phone was
+ * tilted to aim: the connector is on the bottom edge, so pointing the camera often
+ * means turning the phone, and the picture turns with it. That is the camera being a
+ * camera, and it is deliberately not corrected - see the note on gravity below.
  */
 object ViewTransform {
 
     /**
-     * Where the rotation starts before the user touches it. Which way up the picture
-     * lands depends on which way the dongle was pushed in, so no default is right for
-     * everyone: this is the one that suits the connector the usual way round, and the
-     * button covers the other way in a tap.
+     * Verified upright on this camera with the dongle in either way round. Kept
+     * adjustable for hardware this was not tested against, not because this unit
+     * needs it.
      */
     const val DEFAULT_ROTATION = 90
 
