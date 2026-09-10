@@ -33,10 +33,12 @@ import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.ScrollView
+import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
+import kotlin.math.roundToInt
 
 /**
  * Live view. Step 1 proved the protocol on real hardware; this screen is Step 2 -
@@ -50,7 +52,11 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         const val TAG = "FlirOneViewer"
         const val ACTION_USB_PERMISSION = "com.bikbovdamir.flironeviewer.USB_PERMISSION"
         const val MAX_LOG_LINES = 400
+        const val PREFS = "flir-one-viewer"
+        const val PREF_EMISSIVITY = "emissivity"
     }
+
+    private val prefs by lazy { getSharedPreferences(PREFS, Context.MODE_PRIVATE) }
 
     private lateinit var usbManager: UsbManager
     private lateinit var imageView: ImageView
@@ -60,15 +66,18 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     private lateinit var saveButton: Button
     private lateinit var paletteButton: Button
     private lateinit var logButton: Button
+    private lateinit var emissivityLabel: TextView
+    private lateinit var emissivitySeek: SeekBar
 
     private lateinit var camera: FlirOneCamera
     private val renderer = ThermalRenderer()
 
     /**
-     * Coefficients for the unit this was developed on. Readings from another camera
-     * will be off - see [Planck] for how to read its own out of a saved JPEG.
+     * Coefficients for the unit this was developed on, with the user's emissivity
+     * applied on top. Readings from another camera will be off - see [Planck] for how
+     * to read its own out of a saved JPEG.
      */
-    private val planck = Planck.DEVELOPMENT_UNIT
+    private var planck = Planck.DEVELOPMENT_UNIT
 
     private val logLines = ArrayDeque<String>()
     private val repaintPending = AtomicBoolean(false)
@@ -111,6 +120,8 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         saveButton = findViewById(R.id.saveButton)
         paletteButton = findViewById(R.id.paletteButton)
         logButton = findViewById(R.id.logButton)
+        emissivityLabel = findViewById(R.id.emissivityLabel)
+        emissivitySeek = findViewById(R.id.emissivitySeek)
 
         usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
         camera = FlirOneCamera(usbManager, this)
@@ -119,6 +130,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         paletteButton.setOnClickListener { cyclePalette() }
         logButton.setOnClickListener { toggleLog() }
         updatePaletteButton()
+        setUpEmissivity()
 
         val filter = IntentFilter().apply {
             addAction(ACTION_USB_PERMISSION)
@@ -245,6 +257,38 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         } else {
             imageView.invalidate()
         }
+    }
+
+    /**
+     * Wires up the emissivity slider and restores the last value used.
+     *
+     * It is remembered across launches deliberately: someone measuring the same
+     * thing repeatedly should not silently fall back to 0.95 every time they reopen
+     * the app, which would quietly change their readings between sessions.
+     */
+    private fun setUpEmissivity() {
+        val saved = prefs.getFloat(PREF_EMISSIVITY, planck.emissivity.toFloat()).toDouble()
+        applyEmissivity(saved)
+        emissivitySeek.progress = (saved * 100).roundToInt()
+        emissivitySeek.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(bar: SeekBar, progress: Int, fromUser: Boolean) {
+                applyEmissivity(progress / 100.0)
+            }
+
+            override fun onStartTrackingTouch(bar: SeekBar) = Unit
+
+            /** Written only when the finger lifts - not on every pixel of the drag. */
+            override fun onStopTrackingTouch(bar: SeekBar) {
+                prefs.edit().putFloat(PREF_EMISSIVITY, planck.emissivity.toFloat()).apply()
+            }
+        })
+    }
+
+    private fun applyEmissivity(value: Double) {
+        val clamped = value.coerceIn(Planck.MIN_EMISSIVITY, Planck.MAX_EMISSIVITY)
+        planck = planck.copy(emissivity = clamped)
+        emissivityLabel.text = getString(R.string.emissivity_label, clamped)
+        refreshStatus()
     }
 
     /**

@@ -47,7 +47,17 @@ data class Planck(
     val f: Double,
     val o: Double,
     val r2: Double,
-    /** Emissivity of the target. 0.95 suits most matte surfaces, skin included. */
+    /**
+     * Emissivity of the target: how much of what the sensor sees the target actually
+     * radiated, as opposed to reflected from its surroundings. This is the setting
+     * that matters most in practice - the coefficients above are fixed by the
+     * hardware, but a wrong emissivity is a wrong reading, and bare metal is off by
+     * tens of degrees at the default.
+     *
+     * The official app's own presets are a decent guide: matte 0.95 (paint, brick,
+     * wood, plastic, skin), semi-matte 0.80, semi-glossy 0.60, glossy 0.30. Polished
+     * metal runs lower still, which is why it reads far colder than it is.
+     */
     val emissivity: Double = 0.95,
     /** Apparent temperature of whatever the target is reflecting, in Kelvin. */
     val reflectedTemperature: Double = 295.15,
@@ -77,6 +87,14 @@ data class Planck(
     }
 
     companion object {
+        /**
+         * Bounds for the emissivity control. The upper end is the physical limit of a
+         * black body; the lower end is where the correction starts amplifying sensor
+         * noise faster than it removes error, since it divides by this number.
+         */
+        const val MIN_EMISSIVITY = 0.10
+        const val MAX_EMISSIVITY = 1.00
+
         /**
          * The FLIR ONE (gen 3) unit this project was developed against, read out of
          * a JPEG its official app saved on 2026-09-10. Anyone building for a
