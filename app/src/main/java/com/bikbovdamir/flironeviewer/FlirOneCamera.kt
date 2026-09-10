@@ -59,6 +59,10 @@ class FlirOneCamera(
         val droppedFfc: Int,
         val resyncs: Int,
         val fps: Double,
+        /** Raw counts of the last frame - the scale the Planck coefficients apply to. */
+        val rawMin: Int,
+        val rawMax: Int,
+        val rawCenter: Int,
     )
 
     private companion object {
@@ -301,12 +305,16 @@ class FlirOneCamera(
 
             if (now - lastStatsAt >= STATS_INTERVAL_MS) {
                 val elapsed = (now - lastStatsAt) / 1000.0
+                val latest = lastFrame
                 listener.onStats(
                     Stats(
                         frames = frames,
                         droppedFfc = droppedFfc,
                         resyncs = assembler.resyncs,
                         fps = (frames - framesAtLastStats) / elapsed,
+                        rawMin = latest?.min ?: 0,
+                        rawMax = latest?.max ?: 0,
+                        rawCenter = latest?.center ?: 0,
                     )
                 )
                 framesAtLastStats = frames

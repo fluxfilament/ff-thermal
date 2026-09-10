@@ -61,6 +61,12 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     private lateinit var camera: FlirOneCamera
     private val renderer = ThermalRenderer()
 
+    /**
+     * Coefficients for the unit this was developed on. Readings from another camera
+     * will be off - see [Planck] for how to read its own out of a saved JPEG.
+     */
+    private val planck = Planck.DEVELOPMENT_UNIT
+
     private val logLines = ArrayDeque<String>()
     private val repaintPending = AtomicBoolean(false)
 
@@ -263,6 +269,13 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         }
         info?.versionLepton?.let { parts += "Lepton $it" }
         lastStats?.let {
+            if (it.rawMax > 0) {
+                parts += "%.1f / %.1f / %.1f °C".format(
+                    planck.rawToCelsius(it.rawMin),
+                    planck.rawToCelsius(it.rawCenter),
+                    planck.rawToCelsius(it.rawMax),
+                )
+            }
             parts += "%.1f fps".format(it.fps)
             if (it.droppedFfc > 0) parts += "FFC ${it.droppedFfc}"
             if (it.resyncs > 0) parts += "resync ${it.resyncs}"

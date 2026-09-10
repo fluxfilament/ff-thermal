@@ -194,7 +194,23 @@ class ThermalFrame(
     val min: Int,
     val max: Int,
     val status: FrameStatus,
-)
+) {
+    /**
+     * Spot reading at the centre of the frame, averaged over the middle four pixels
+     * the way upstream does - one pixel of an 80x60 sensor is noisy enough that a
+     * single sample jitters visibly between frames.
+     */
+    val center: Int
+        get() {
+            val cx = width / 2
+            val cy = height / 2
+            val a = raw[(cy - 1) * width + cx - 1]
+            val b = raw[(cy - 1) * width + cx]
+            val c = raw[cy * width + cx - 1]
+            val d = raw[cy * width + cx]
+            return (a + b + c + d) / 4
+        }
+}
 
 /**
  * The per-frame status string. Upstream tests for shutter calibration with a

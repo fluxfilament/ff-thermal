@@ -1,0 +1,94 @@
+/*
+ * Copyright (C) 2026 bikbov-damir
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The radiometric conversion is the Planck equation as applied by FLIR's
+ * own metadata; the arrangement below follows fnoop/flirone-v4l2's
+ * plank.h (C) 2015-2016 Thomas <tomas123@EEVblog>, GPL-2.0-or-later.
+ * See NOTICE.
+ */
+package com.bikbovdamir.flironeviewer
+
+import kotlin.math.exp
+import kotlin.math.ln
+
+/**
+ * Converts raw sensor counts to degrees Celsius.
+ *
+ * The five Planck coefficients are **per camera unit**, written into every JPEG
+ * the official FLIR app saves. Both upstream projects hardcode coefficients read
+ * off one author's own camera, with a comment wondering whether they are hardware
+ * dependent. They are: measured across three units, R1 came out 16515.2 / 18417.0 /
+ * 18666.1 and O came out -4387 / -1656 / -1927. Borrowing someone else's numbers -
+ * O especially - shifts every reading.
+ *
+ * To read them off a camera, save one shot with the official FLIR ONE app and pull
+ * the FFF metadata out of the JPEG (`exiftool -Planck*`, or `tools/fff_parse.py`
+ * in this repo, which needs no root). Two things to watch: the FFF record index is
+ * big-endian while the numbers inside a record are little-endian, and the embedded
+ * raw thermal PNG is byte-swapped relative to how an ordinary PNG reader will
+ * decode it.
+ */
+data class Planck(
+    val r1: Double,
+    val b: Double,
+    val f: Double,
+    val o: Double,
+    val r2: Double,
+    /** Emissivity of the target. 0.95 suits most matte surfaces, skin included. */
+    val emissivity: Double = 0.95,
+    /** Apparent temperature of whatever the target is reflecting, in Kelvin. */
+    val reflectedTemperature: Double = 295.15,
+) {
+
+    /**
+     * Counts arriving over USB are a quarter of the scale the coefficients are
+     * calibrated against - upstream applies the same factor and calls it a "mystery
+     * correction factor". It is not a mystery once both scales are in view: running
+     * the equation over the raw thermal image embedded in a JPEG from this same
+     * camera gives sane room temperatures at x1 (29-43 C) and nonsense at x4
+     * (246-266 C), while the live USB stream of a comparable scene reads 3729-4214
+     * against that JPEG's 15476-17036. Four times, measured from both ends.
+     */
+    private val usbScale = 4
+
+    /** Radiance the target reflects from its surroundings, in raw counts. */
+    private val reflectedRaw: Double =
+        r1 / (r2 * (exp(b / reflectedTemperature) - f)) - o
+
+    fun rawToCelsius(raw: Int): Double {
+        val scaled = raw.toDouble() * usbScale
+        val objectRaw = (scaled - (1 - emissivity) * reflectedRaw) / emissivity
+        val ratio = r1 / (r2 * (objectRaw + o)) + f
+        if (ratio <= 0) return Double.NaN
+        return b / ln(ratio) - 273.15
+    }
+
+    companion object {
+        /**
+         * The FLIR ONE (gen 3) unit this project was developed against, read out of
+         * a JPEG its official app saved on 2026-09-10. Anyone building for a
+         * different unit should replace these - see the class docs for how - rather
+         * than trust them.
+         */
+        val DEVELOPMENT_UNIT = Planck(
+            r1 = 16515.199219,
+            b = 1435.0,
+            f = 1.0,
+            o = -4387.0,
+            r2 = 0.0125,
+        )
+    }
+}
