@@ -13,11 +13,16 @@
             re-opens it mid-stream, which costs a stall and loses the one-shot
             sledInformation message. A rotation is not worth that.
             keepScreenOn: a live view the user is pointing at things should not time out.
+            screenOrientation: the picture is turned to match gravity from the
+            accelerometer, so the window must not turn as well - the two rotations
+            would compound. Camera apps generally do exactly this: fixed chrome,
+            rotating preview.
         -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
+            android:screenOrientation="portrait"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -23,12 +23,14 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.graphics.drawable.BitmapDrawable
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.OrientationEventListener
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
@@ -56,6 +58,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         const val PREF_EMISSIVITY = "emissivity"
         const val PREF_FOV_RATIO = "fovRatio"
         const val PREF_PARALLAX_X = "parallaxX"
+        const val PREF_MIRRORED = "mirrored"
 
         /** Alignment slider covers +/- this fraction of the visible frame's width. */
         const val ALIGN_RANGE = 0.10f
@@ -71,6 +74,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     private lateinit var saveButton: Button
     private lateinit var paletteButton: Button
     private lateinit var blendButton: Button
+    private lateinit var mirrorButton: Button
     private lateinit var logButton: Button
     private lateinit var emissivityLabel: TextView
     private lateinit var emissivitySeek: SeekBar
@@ -89,6 +93,30 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
 
     /** Mixing the visible layer costs a JPEG decode per frame, so it starts off. */
     private var blendMode = BlendMode.THERMAL
+
+    /**
+     * Mirrored by default: plugged into the phone the camera points back at whoever
+     * is holding it, and an unmirrored front camera reads as wrong to everyone.
+     */
+    private var mirrored = true
+
+    /** How far the phone itself is turned clockwise, snapped to a quarter turn. */
+    private var deviceRotation = 0
+    private val imageMatrix = Matrix()
+
+    private val orientationListener by lazy {
+        object : OrientationEventListener(this) {
+            override fun onOrientationChanged(orientation: Int) {
+                if (orientation == ORIENTATION_UNKNOWN) return
+                // Snap to quarter turns: the picture should settle into one of four
+                // positions, not drift continuously with every wobble of the hand.
+                val snapped = ((orientation + 45) / 90 * 90) % 360
+                if (snapped == deviceRotation) return
+                deviceRotation = snapped
+                updateImageMatrix()
+            }
+        }
+    }
 
     /**
      * Coefficients for the unit this was developed on, with the user's emissivity
@@ -138,6 +166,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         saveButton = findViewById(R.id.saveButton)
         paletteButton = findViewById(R.id.paletteButton)
         blendButton = findViewById(R.id.blendButton)
+        mirrorButton = findViewById(R.id.mirrorButton)
         logButton = findViewById(R.id.logButton)
         emissivityLabel = findViewById(R.id.emissivityLabel)
         emissivitySeek = findViewById(R.id.emissivitySeek)
@@ -153,9 +182,14 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         saveButton.setOnClickListener { saveSnapshot() }
         paletteButton.setOnClickListener { cyclePalette() }
         blendButton.setOnClickListener { cycleBlend() }
+        mirrorButton.setOnClickListener { toggleMirror() }
         logButton.setOnClickListener { toggleLog() }
+        mirrored = prefs.getBoolean(PREF_MIRRORED, true)
         updatePaletteButton()
         updateBlendButton()
+        updateMirrorButton()
+        // The view has no size until it is laid out, and the fit depends on it.
+        imageView.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> updateImageMatrix() }
         setUpEmissivity()
         setUpOverlayControls()
 
@@ -185,6 +219,16 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         if (intent.action == UsbManager.ACTION_USB_DEVICE_ATTACHED) {
             intent.usbDeviceExtra()?.let { requestPermissionOrStart(it) }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (orientationListener.canDetectOrientation()) orientationListener.enable()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        orientationListener.disable()
     }
 
     override fun onDestroy() {
@@ -282,6 +326,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
             // 80x60 blown up to a phone screen: interpolation just smears the pixels,
             // and a wrong de-interleave has to stay visible as hard banding.
             (imageView.drawable as? BitmapDrawable)?.isFilterBitmap = false
+            updateImageMatrix()
         } else {
             imageView.invalidate()
         }
@@ -340,7 +385,12 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         snapshotCompositor.fovRatio = compositor.fovRatio
         snapshotCompositor.parallaxX = compositor.parallaxX
         snapshotCompositor.parallaxY = compositor.parallaxY
-        val bitmap = snapshotCompositor.compose(frame, thermal, blendMode) ?: thermal
+        val composed = snapshotCompositor.compose(frame, thermal, blendMode) ?: thermal
+        val bitmap = ViewTransform.orient(
+            composed,
+            ViewTransform.rotationFor(deviceRotation),
+            mirrored,
+        )
         saveButton.isEnabled = false
         thread(name = "flir-save") {
             val message = try {
@@ -380,6 +430,40 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
 
     private fun updateBlendButton() {
         blendButton.text = blendMode.label
+    }
+
+    private fun toggleMirror() {
+        mirrored = !mirrored
+        prefs.edit().putBoolean(PREF_MIRRORED, mirrored).apply()
+        updateMirrorButton()
+        updateImageMatrix()
+    }
+
+    private fun updateMirrorButton() {
+        mirrorButton.setText(if (mirrored) R.string.mirror_on else R.string.mirror_off)
+    }
+
+    /**
+     * Positions the picture in the view: turned upright for how the phone is being
+     * held, mirrored if asked, scaled to fit. Nothing here touches pixels - it is a
+     * matrix on the view, so turning the phone costs nothing per frame.
+     */
+    private fun updateImageMatrix() {
+        val drawable = imageView.drawable ?: return
+        val srcW = drawable.intrinsicWidth.toFloat()
+        val srcH = drawable.intrinsicHeight.toFloat()
+        val viewW = imageView.width.toFloat()
+        val viewH = imageView.height.toFloat()
+        if (srcW <= 0f || srcH <= 0f || viewW <= 0f || viewH <= 0f) return
+        imageView.imageMatrix = ViewTransform.matrixFor(
+            srcW = srcW,
+            srcH = srcH,
+            viewW = viewW,
+            viewH = viewH,
+            rotation = ViewTransform.rotationFor(deviceRotation),
+            mirrored = mirrored,
+            into = imageMatrix,
+        )
     }
 
     /**
