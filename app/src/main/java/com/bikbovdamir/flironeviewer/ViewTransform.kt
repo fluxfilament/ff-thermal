@@ -23,33 +23,34 @@ import kotlin.math.min
 /**
  * How the sensor image is turned before anyone looks at it.
  *
- * Two separate things are going on:
+ * Both the rotation and the mirroring are settings rather than constants, and the
+ * reason is the connector: USB-C plugs in either way up. Turn the dongle over and
+ * the sensor turns with it - the picture arrives 180 degrees round, and the camera
+ * now looks the other way, so what was a front camera wanting a mirror becomes a
+ * rear one that must not have it. No amount of code can tell which way it was
+ * pushed in, so the user says.
  *
- *  - **Mounting.** The camera plugs into the USB-C port, so its sensor sits at a
- *    fixed angle to the phone body - [MOUNT_ROTATION] undoes that. It is a property
- *    of the hardware, not a preference.
- *  - **Gravity.** The camera is bolted to the phone, so turning the phone turns the
- *    scene with it. Since the window is locked to portrait, the picture has to be
- *    turned back by however far the phone has been turned, which is why the sign is
- *    negative: rotate the phone clockwise and the scene needs winding back the other
- *    way to stay upright for the person holding it.
+ * There is deliberately no compensation for how the phone is being *held*. The
+ * camera is bolted to the phone and the window is locked to portrait, so turning the
+ * phone turns the camera and the screen together and their relationship never
+ * changes - an accelerometer term here turns the picture away from correct, not
+ * towards it. It was tried both ways round before the reasoning caught up: neither
+ * sign worked, because the term should not exist at all.
  *
  * Mirroring is applied after the rotation, in what the viewer sees, so the toggle
- * always flips left and right on screen no matter which way the phone is held. That
- * is the point of it: pointed at its owner the camera behaves like a front camera,
- * and a front camera that is not mirrored feels wrong to everyone.
+ * flips left and right on screen whichever way the picture has been turned.
  */
 object ViewTransform {
 
     /**
-     * Rotation, clockwise, that makes the sensor image upright with the phone held
-     * upright. Fixed by where the connector is.
+     * Where the rotation starts before the user touches it. Which way up the picture
+     * lands depends on which way the dongle was pushed in, so no default is right for
+     * everyone: this is the one that suits the connector the usual way round, and the
+     * button covers the other way in a tap.
      */
-    const val MOUNT_ROTATION = 90
+    const val DEFAULT_ROTATION = 90
 
-    /** Combined rotation for a phone turned [deviceRotation] degrees clockwise. */
-    fun rotationFor(deviceRotation: Int): Int =
-        ((MOUNT_ROTATION - deviceRotation) % 360 + 360) % 360
+    val ROTATIONS = listOf(0, 90, 180, 270)
 
     /**
      * Matrix mapping a [srcW] x [srcH] image into a [viewW] x [viewH] view: turned,

@@ -19,6 +19,7 @@ package com.bikbovdamir.flironeviewer
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Rect
 
@@ -50,13 +51,12 @@ enum class BlendMode(val label: String, val visibleAlpha: Int) {
  *  - **Field of view** is a fixed property of the optics. The visible lens sees a
  *    wider scene, so a centre crop of it covers the same angle as the whole thermal
  *    frame. [fovRatio] is that crop, as a fraction of the visible frame.
- *  - **Parallax** is not fixed: the lenses are offset from each other, so how far
- *    the two images slide apart depends on how far away the subject is. That is why
- *    [parallaxX] is a user control and not a constant - and why every commercial
- *    thermal app has a "distance" or "alignment" slider doing exactly this.
- *
- * The lenses sit side by side, so the parallax shift is essentially horizontal;
- * one control covers it.
+ * - **Parallax** is not fixed: the lenses are offset from each other, so how far
+ *    the two images slide apart depends on how far away the subject is. Confirmed on
+ *    the device across four shots of the same mug at different distances - one
+ *    setting cannot serve them all. That is why [parallax] stays a user control, and
+ *    why every commercial thermal app has a "distance" or "alignment" slider doing
+ *    exactly this.
  */
 class Compositor {
 
@@ -67,15 +67,28 @@ class Compositor {
      */
     var fovRatio: Float = DEFAULT_FOV_RATIO
 
-    /** Horizontal parallax correction, as a fraction of the visible frame's width. */
-    var parallaxX: Float = 0f
-
-    /** Vertical residual, normally near zero for side-by-side lenses. */
-    var parallaxY: Float = 0f
+    /**
+     * Parallax correction, as a fraction of the visible frame's width, applied along
+     * the source frame's own x axis - the direction the two lenses are separated in.
+     *
+     * Kept in the sensor's coordinates on purpose. An earlier version expressed it in
+     * what the viewer sees and turned it into source coordinates through the display
+     * transform, which meant every change to the rotation or the mirror silently
+     * redefined what the slider did, and getting that mapping right took three
+     * attempts. The lens separation is a fact about the camera body; describing it in
+     * the camera's own frame makes it immune to how the picture is later turned.
+     *
+     * Calibration on this unit put it at [DEFAULT_PARALLAX] with the subject about an
+     * arm away. It is a control and not a constant because it moves with distance:
+     * the same setting that lines up a mug on the desk is visibly off for a wall
+     * across the room.
+     */
+    var parallax: Float = DEFAULT_PARALLAX
 
     private var output: Bitmap? = null
     private var visible: Bitmap? = null
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
+    private val placement = Matrix()
     private val decodeOptions = BitmapFactory.Options().apply {
         // Half resolution is still far more detail than the 80x60 thermal frame it is
         // being mixed with, at a quarter of the decode cost per frame.
@@ -102,31 +115,34 @@ class Compositor {
 
         if (mode.visibleAlpha > 0) {
             paint.alpha = mode.visibleAlpha
-            canvas.drawBitmap(vis, cropMatchingThermalFov(vis), Rect(0, 0, out.width, out.height), paint)
+            canvas.drawBitmap(vis, placeVisible(vis, out.width, out.height), paint)
         }
         return out
     }
 
     /**
-     * The centre-crop of the visible frame covering the same angle as the thermal
-     * frame, shifted by the parallax correction. Clamped to the frame, so dragging
-     * the alignment to an extreme degrades gracefully rather than drawing nothing.
+     * Maps the region of the visible frame that matches the thermal field of view
+     * onto the whole output.
+     *
+     * Drawn through a matrix rather than by handing Canvas a source rectangle,
+     * because the region is not required to lie inside the frame. It leaves the frame
+     * whenever the field-of-view ratio goes above 1 - meaning the thermal lens sees
+     * wider than the visible one - or whenever the alignment is pushed far enough.
+     * Clamping the rectangle instead used to throw the moment the ratio passed 1,
+     * which killed the camera loop outright. With a matrix, whatever falls outside
+     * simply is not painted and the thermal layer shows through at that edge, which
+     * is also the honest picture: there is no visible data there.
      */
-    private fun cropMatchingThermalFov(vis: Bitmap): Rect {
+    private fun placeVisible(vis: Bitmap, outW: Int, outH: Int): Matrix {
         val cropW = vis.width * fovRatio
         val cropH = vis.height * fovRatio
-        val cx = vis.width / 2f + parallaxX * vis.width
-        val cy = vis.height / 2f + parallaxY * vis.height
-        var left = cx - cropW / 2f
-        var top = cy - cropH / 2f
-        left = left.coerceIn(0f, vis.width - cropW)
-        top = top.coerceIn(0f, vis.height - cropH)
-        return Rect(
-            left.toInt(),
-            top.toInt(),
-            (left + cropW).toInt(),
-            (top + cropH).toInt(),
-        )
+        val left = vis.width / 2f + parallax * vis.width - cropW / 2f
+        val top = vis.height / 2f - cropH / 2f
+        return placement.apply {
+            reset()
+            postTranslate(-left, -top)
+            postScale(outW / cropW, outH / cropH)
+        }
     }
 
     private fun decode(jpeg: ByteArray): Bitmap? {
@@ -167,11 +183,18 @@ class Compositor {
         const val OUTPUT_SCALE = 8
 
         /**
-         * Starting estimate for the field-of-view crop, from matching thermal and
-         * visible frames of the same scene by gradient correlation. It is a first
-         * approximation from one scene, not a precise optical constant - the alignment
-         * control exists partly to absorb what it gets wrong.
+         * The field-of-view crop, settled by lining the two layers up on the device
+         * against a real subject. Below 1 because the visible lens is the wider of the
+         * two, which is what the FLIR One's published figures say as well. Unlike the
+         * alignment below, this one really is a constant: it is fixed by the optics
+         * and does not move with distance.
          */
-        const val DEFAULT_FOV_RATIO = 0.73f
+        const val DEFAULT_FOV_RATIO = 0.77f
+
+        /**
+         * Alignment measured on this camera against a mug at roughly arm's length.
+         * A starting point, not a fixed truth - see [parallax].
+         */
+        const val DEFAULT_PARALLAX = 0.034f
     }
 }

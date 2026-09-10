@@ -4,6 +4,7 @@
     <string name="thermal_view_description">Live thermal image</string>
     <string name="fov_label">FOV %1$.2f</string>
     <string name="align_label">Align %1$+.3f</string>
+    <string name="rotate_button">Rot %1$d°</string>
     <string name="emissivity_label">ε %1$.2f</string>
     <string name="save_button">Save</string>
     <string name="saved_to">Saved to %1$s</string>

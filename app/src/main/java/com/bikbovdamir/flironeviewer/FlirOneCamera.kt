@@ -25,6 +25,7 @@ import android.hardware.usb.UsbDeviceConnection
 import android.hardware.usb.UsbEndpoint
 import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
+import android.util.Log
 import kotlin.concurrent.thread
 
 /**
@@ -66,6 +67,8 @@ class FlirOneCamera(
     )
 
     private companion object {
+        const val TAG = "FlirOneViewer"
+
         /** Upstream's comment on this one is emphatic: don't change it. */
         const val FRAME_READ_TIMEOUT_MS = 100
         const val SIDE_READ_TIMEOUT_MS = 10
@@ -173,6 +176,7 @@ class FlirOneCamera(
         var frames = 0
         var droppedFfc = 0
         var decodeFailures = 0
+        var deliveryFailures = 0
 
         val telemetry = TelemetryAssembler(
             log = listener::onLog,
@@ -269,7 +273,19 @@ class FlirOneCamera(
                         jpeg = jpeg,
                     )
                     lastFrame = frame
-                    listener.onFrame(frame)
+                    // Whatever the listener does with a frame - colourising, blending,
+                    // drawing - it is not worth the camera for. Letting an exception
+                    // out of here used to take the USB loop down with it, so a fault
+                    // in the display path looked exactly like the camera dying. Report
+                    // the first one and keep streaming.
+                    try {
+                        listener.onFrame(frame)
+                    } catch (e: Exception) {
+                        if (deliveryFailures++ == 0) {
+                            listener.onLog("Frame delivery threw, stream continues: $e")
+                            Log.e(TAG, "listener.onFrame failed", e)
+                        }
+                    }
                 }
             }
         }

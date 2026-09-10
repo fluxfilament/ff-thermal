@@ -19,63 +19,10 @@
         android:id="@+id/thermalView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="2"
+        android:layout_weight="1"
         android:background="#000000"
         android:scaleType="matrix"
         android:contentDescription="@string/thermal_view_description" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/saveButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="11sp"
-            android:paddingStart="0dp"
-            android:paddingEnd="0dp"
-            android:text="@string/save_button" />
-
-        <Button
-            android:id="@+id/paletteButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="11sp"
-            android:paddingStart="0dp"
-            android:paddingEnd="0dp" />
-
-        <Button
-            android:id="@+id/blendButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="11sp"
-            android:paddingStart="0dp"
-            android:paddingEnd="0dp" />
-
-        <Button
-            android:id="@+id/mirrorButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="11sp"
-            android:paddingStart="0dp"
-            android:paddingEnd="0dp" />
-
-        <Button
-            android:id="@+id/logButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="11sp"
-            android:paddingStart="0dp"
-            android:paddingEnd="0dp"
-            android:text="@string/log_button" />
-    </LinearLayout>
 
     <!--
         Only meaningful while the visible layer is mixed in, so it stays out of the
@@ -140,8 +87,7 @@
                 android:layout_weight="1"
                 android:min="0"
                 android:max="100" />
-        </LinearLayout>
-    </LinearLayout>
+        </LinearLayout>    </LinearLayout>
 
     <!--
         Emissivity stays on screen rather than behind a settings toggle: it is the
@@ -177,8 +123,7 @@
     <ScrollView
         android:id="@+id/logScroll"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_height="200dp">
 
         <TextView
             android:id="@+id/logView"
@@ -190,5 +135,80 @@
             android:textColor="#AAAAAA"
             android:textIsSelectable="true" />
     </ScrollView>
+
+    <!--
+        Pinned at the bottom on purpose. The alignment rows above appear and vanish
+        with the blend mode, and when the buttons sat above them the row jumped the
+        instant it was pressed - the button moved out from under the finger that had
+        just tapped it. Down here nothing above can move it, and it is a better place
+        for a thumb anyway.
+    -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/saveButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="11sp"
+            android:paddingStart="0dp"
+            android:paddingEnd="0dp"
+            android:text="@string/save_button" />
+
+        <Button
+            android:id="@+id/paletteButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="11sp"
+            android:paddingStart="0dp"
+            android:paddingEnd="0dp" />
+
+        <Button
+            android:id="@+id/blendButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="11sp"
+            android:paddingStart="0dp"
+            android:paddingEnd="0dp" />
+
+        <Button
+            android:id="@+id/rotateButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="11sp"
+            android:paddingStart="0dp"
+            android:paddingEnd="0dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/mirrorButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="11sp"
+            android:paddingStart="0dp"
+            android:paddingEnd="0dp" />
+
+        <Button
+            android:id="@+id/logButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="11sp"
+            android:paddingStart="0dp"
+            android:paddingEnd="0dp"
+            android:text="@string/log_button" />
+    </LinearLayout>
 
 </LinearLayout>

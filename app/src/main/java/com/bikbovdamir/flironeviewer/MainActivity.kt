@@ -30,7 +30,6 @@ import android.hardware.usb.UsbManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.OrientationEventListener
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
@@ -57,7 +56,8 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         const val PREFS = "flir-one-viewer"
         const val PREF_EMISSIVITY = "emissivity"
         const val PREF_FOV_RATIO = "fovRatio"
-        const val PREF_PARALLAX_X = "parallaxX"
+        const val PREF_PARALLAX = "parallax"
+        const val PREF_ROTATION = "rotation"
         const val PREF_MIRRORED = "mirrored"
 
         /** Alignment slider covers +/- this fraction of the visible frame's width. */
@@ -75,6 +75,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     private lateinit var paletteButton: Button
     private lateinit var blendButton: Button
     private lateinit var mirrorButton: Button
+    private lateinit var rotateButton: Button
     private lateinit var logButton: Button
     private lateinit var emissivityLabel: TextView
     private lateinit var emissivitySeek: SeekBar
@@ -100,23 +101,13 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
      */
     private var mirrored = true
 
-    /** How far the phone itself is turned clockwise, snapped to a quarter turn. */
-    private var deviceRotation = 0
-    private val imageMatrix = Matrix()
+    /**
+     * Which way the picture has to be turned. A setting, not a constant: USB-C goes
+     * in either way up, and flipping the dongle turns the sensor with it.
+     */
+    private var rotation = ViewTransform.DEFAULT_ROTATION
 
-    private val orientationListener by lazy {
-        object : OrientationEventListener(this) {
-            override fun onOrientationChanged(orientation: Int) {
-                if (orientation == ORIENTATION_UNKNOWN) return
-                // Snap to quarter turns: the picture should settle into one of four
-                // positions, not drift continuously with every wobble of the hand.
-                val snapped = ((orientation + 45) / 90 * 90) % 360
-                if (snapped == deviceRotation) return
-                deviceRotation = snapped
-                updateImageMatrix()
-            }
-        }
-    }
+    private val imageMatrix = Matrix()
 
     /**
      * Coefficients for the unit this was developed on, with the user's emissivity
@@ -167,6 +158,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         paletteButton = findViewById(R.id.paletteButton)
         blendButton = findViewById(R.id.blendButton)
         mirrorButton = findViewById(R.id.mirrorButton)
+        rotateButton = findViewById(R.id.rotateButton)
         logButton = findViewById(R.id.logButton)
         emissivityLabel = findViewById(R.id.emissivityLabel)
         emissivitySeek = findViewById(R.id.emissivitySeek)
@@ -183,11 +175,14 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         paletteButton.setOnClickListener { cyclePalette() }
         blendButton.setOnClickListener { cycleBlend() }
         mirrorButton.setOnClickListener { toggleMirror() }
+        rotateButton.setOnClickListener { cycleRotation() }
         logButton.setOnClickListener { toggleLog() }
         mirrored = prefs.getBoolean(PREF_MIRRORED, true)
+        rotation = prefs.getInt(PREF_ROTATION, ViewTransform.DEFAULT_ROTATION)
         updatePaletteButton()
         updateBlendButton()
         updateMirrorButton()
+        updateRotateButton()
         // The view has no size until it is laid out, and the fit depends on it.
         imageView.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> updateImageMatrix() }
         setUpEmissivity()
@@ -219,16 +214,6 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         if (intent.action == UsbManager.ACTION_USB_DEVICE_ATTACHED) {
             intent.usbDeviceExtra()?.let { requestPermissionOrStart(it) }
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (orientationListener.canDetectOrientation()) orientationListener.enable()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        orientationListener.disable()
     }
 
     override fun onDestroy() {
@@ -383,14 +368,9 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         // camera thread; it only has to carry the same alignment.
         val thermal = renderer.snapshot(frame)
         snapshotCompositor.fovRatio = compositor.fovRatio
-        snapshotCompositor.parallaxX = compositor.parallaxX
-        snapshotCompositor.parallaxY = compositor.parallaxY
+        snapshotCompositor.parallax = compositor.parallax
         val composed = snapshotCompositor.compose(frame, thermal, blendMode) ?: thermal
-        val bitmap = ViewTransform.orient(
-            composed,
-            ViewTransform.rotationFor(deviceRotation),
-            mirrored,
-        )
+        val bitmap = ViewTransform.orient(composed, rotation, mirrored)
         saveButton.isEnabled = false
         thread(name = "flir-save") {
             val message = try {
@@ -436,7 +416,20 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         mirrored = !mirrored
         prefs.edit().putBoolean(PREF_MIRRORED, mirrored).apply()
         updateMirrorButton()
+        updateRotateButton()
         updateImageMatrix()
+    }
+
+    private fun cycleRotation() {
+        val next = ViewTransform.ROTATIONS.indexOf(rotation) + 1
+        rotation = ViewTransform.ROTATIONS[next % ViewTransform.ROTATIONS.size]
+        prefs.edit().putInt(PREF_ROTATION, rotation).apply()
+        updateRotateButton()
+        updateImageMatrix()
+    }
+
+    private fun updateRotateButton() {
+        rotateButton.text = getString(R.string.rotate_button, rotation)
     }
 
     private fun updateMirrorButton() {
@@ -444,9 +437,9 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     }
 
     /**
-     * Positions the picture in the view: turned upright for how the phone is being
-     * held, mirrored if asked, scaled to fit. Nothing here touches pixels - it is a
-     * matrix on the view, so turning the phone costs nothing per frame.
+     * Positions the picture in the view: turned upright for how the camera is
+     * mounted, mirrored if asked, scaled to fit. Nothing here touches pixels - it is
+     * a matrix on the view, so it costs nothing per frame.
      */
     private fun updateImageMatrix() {
         val drawable = imageView.drawable ?: return
@@ -460,7 +453,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
             srcH = srcH,
             viewW = viewW,
             viewH = viewH,
-            rotation = ViewTransform.rotationFor(deviceRotation),
+            rotation = rotation,
             mirrored = mirrored,
             into = imageMatrix,
         )
@@ -473,9 +466,9 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
      */
     private fun setUpOverlayControls() {
         compositor.fovRatio = prefs.getFloat(PREF_FOV_RATIO, Compositor.DEFAULT_FOV_RATIO)
-        compositor.parallaxX = prefs.getFloat(PREF_PARALLAX_X, 0f)
+        compositor.parallax = prefs.getFloat(PREF_PARALLAX, Compositor.DEFAULT_PARALLAX)
         fovSeek.progress = (compositor.fovRatio * 100).roundToInt()
-        alignSeek.progress = ((compositor.parallaxX / ALIGN_RANGE + 1f) * 50f).roundToInt()
+        alignSeek.progress = ((compositor.parallax / ALIGN_RANGE + 1f) * 50f).roundToInt()
         updateOverlayLabels()
 
         fovSeek.setOnSeekBarChangeListener(seekListener({ progress ->
@@ -483,8 +476,8 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         }, { prefs.edit().putFloat(PREF_FOV_RATIO, compositor.fovRatio).apply() }))
 
         alignSeek.setOnSeekBarChangeListener(seekListener({ progress ->
-            compositor.parallaxX = (progress / 50f - 1f) * ALIGN_RANGE
-        }, { prefs.edit().putFloat(PREF_PARALLAX_X, compositor.parallaxX).apply() }))
+            compositor.parallax = (progress / 50f - 1f) * ALIGN_RANGE
+        }, { prefs.edit().putFloat(PREF_PARALLAX, compositor.parallax).apply() }))
     }
 
     private fun seekListener(
@@ -503,7 +496,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
 
     private fun updateOverlayLabels() {
         fovLabel.text = getString(R.string.fov_label, compositor.fovRatio)
-        alignLabel.text = getString(R.string.align_label, compositor.parallaxX)
+        alignLabel.text = getString(R.string.align_label, compositor.parallax)
     }
 
     private fun toggleLog() {
