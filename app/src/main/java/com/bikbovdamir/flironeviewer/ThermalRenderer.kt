@@ -63,10 +63,13 @@ enum class Palette(val label: String) {
     }
 }
 
+/** A contrast window in raw sensor counts: the two ends of the palette. */
+data class ContrastRange(val lo: Float, val hi: Float)
+
 /**
- * Turns raw sensor counts into a displayable bitmap. Contrast is per-frame linear
- * auto-gain over the frame's own min/max, same as upstream - no temperature scale
- * is involved yet, so the image says "hotter/colder", not "how hot".
+ * Turns raw sensor counts into a displayable bitmap. By default contrast is linear
+ * auto-gain over the frame's own min/max, same as upstream; set [fixedRange] to pin
+ * it instead.
  *
  * Reuses one [Bitmap] and one pixel array between frames: at ~9 fps, allocating
  * both per frame is pure GC pressure.
@@ -74,6 +77,27 @@ enum class Palette(val label: String) {
 class ThermalRenderer {
 
     var palette: Palette = Palette.IRON
+
+    /**
+     * When set, the palette is stretched over these counts on every frame instead of
+     * over each frame's own extremes.
+     *
+     * Auto-gain makes the better-looking single picture and the incomparable series:
+     * the same wall is the same shade whether or not something hot is in shot, so two
+     * frames cannot be read against each other, and a subject slowly warming up looks
+     * unchanged. Pinning the window is what turns the colours into a scale.
+     *
+     * Written from the UI thread, read on the camera thread.
+     */
+    @Volatile
+    var fixedRange: ContrastRange? = null
+
+    /**
+     * The window auto-gain has currently settled on, or null before the first frame.
+     * Exposed so a fixed window can be seeded from it rather than from nothing.
+     */
+    val autoRange: ContrastRange?
+        get() = if (haveBounds) ContrastRange(smoothedMin, smoothedMax) else null
 
     private var bitmap: Bitmap? = null
     private var argb = IntArray(0)
@@ -118,8 +142,12 @@ class ThermalRenderer {
     }
 
     private fun colourise(frame: ThermalFrame, into: IntArray) {
-        val lo = if (haveBounds) smoothedMin else frame.min.toFloat()
-        val hi = if (haveBounds) smoothedMax else frame.max.toFloat()
+        // Auto-gain keeps tracking even while pinned, so that unpinning - and seeding
+        // the next pinned window - picks up the scene as it is now, not as it was
+        // whenever the window was last fixed.
+        val fixed = fixedRange
+        val lo = fixed?.lo ?: if (haveBounds) smoothedMin else frame.min.toFloat()
+        val hi = fixed?.hi ?: if (haveBounds) smoothedMax else frame.max.toFloat()
         val span = (hi - lo).coerceAtLeast(1f)
         val lut = palette.lut
         val raw = frame.raw

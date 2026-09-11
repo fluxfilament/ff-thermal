@@ -36,6 +36,8 @@ import android.widget.TextView
 import android.widget.Toast
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.roundToInt
 
 /**
@@ -57,9 +59,28 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         const val PREF_ROTATION = "rotation"
         const val PREF_SPOTS = "spots"
         const val PREF_MIRRORED = "mirrored"
+        const val PREF_RANGE_FIXED = "rangeFixed"
+        const val PREF_RANGE_LOW = "rangeLow"
+        const val PREF_RANGE_HIGH = "rangeHigh"
 
         /** Alignment slider covers +/- this fraction of the visible frame's width. */
         const val ALIGN_RANGE = 0.10f
+
+        /**
+         * Ends of the fixed-contrast sliders, in whole degrees. Roughly the span this
+         * camera is specified for, widened a little at the top: readings above it are
+         * increasingly meaningless, but a window that cannot reach a soldering iron is
+         * more annoying than one that can be set somewhere useless.
+         */
+        const val RANGE_MIN_C = -20
+        const val RANGE_MAX_C = 150
+
+        /** The window never closes completely; below a degree everything saturates. */
+        const val MIN_SPAN_C = 1
+
+        /** Where the window sits before it has ever been set: indoor scenes. */
+        const val DEFAULT_RANGE_LOW_C = 15
+        const val DEFAULT_RANGE_HIGH_C = 40
     }
 
     private val prefs by lazy { getSharedPreferences(PREFS, Context.MODE_PRIVATE) }
@@ -71,6 +92,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     private lateinit var logScroll: ScrollView
     private lateinit var saveButton: Button
     private lateinit var paletteButton: Button
+    private lateinit var rangeButton: Button
     private lateinit var blendButton: Button
     private lateinit var mirrorButton: Button
     private lateinit var rotateButton: Button
@@ -84,6 +106,11 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     private lateinit var fovSeek: SeekBar
     private lateinit var alignLabel: TextView
     private lateinit var alignSeek: SeekBar
+    private lateinit var rangeControls: View
+    private lateinit var rangeLowLabel: TextView
+    private lateinit var rangeLowSeek: SeekBar
+    private lateinit var rangeHighLabel: TextView
+    private lateinit var rangeHighSeek: SeekBar
 
     private lateinit var camera: FlirOneCamera
     private val renderer = ThermalRenderer()
@@ -108,6 +135,15 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     private var rotation = ViewTransform.DEFAULT_ROTATION
 
     private val spotMeter = SpotMeter()
+
+    /**
+     * The fixed contrast window, held in degrees rather than in the counts the
+     * renderer wants. Degrees are what the user set and what survives a change of
+     * emissivity; the counts are re-derived from them whenever either moves.
+     */
+    private var rangeFixed = false
+    private var rangeLowC = DEFAULT_RANGE_LOW_C
+    private var rangeHighC = DEFAULT_RANGE_HIGH_C
 
     /**
      * Coefficients for the unit this was developed on, with the user's emissivity
@@ -157,6 +193,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         logScroll = findViewById(R.id.logScroll)
         saveButton = findViewById(R.id.saveButton)
         paletteButton = findViewById(R.id.paletteButton)
+        rangeButton = findViewById(R.id.rangeButton)
         blendButton = findViewById(R.id.blendButton)
         mirrorButton = findViewById(R.id.mirrorButton)
         rotateButton = findViewById(R.id.rotateButton)
@@ -170,12 +207,18 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         fovSeek = findViewById(R.id.fovSeek)
         alignLabel = findViewById(R.id.alignLabel)
         alignSeek = findViewById(R.id.alignSeek)
+        rangeControls = findViewById(R.id.rangeControls)
+        rangeLowLabel = findViewById(R.id.rangeLowLabel)
+        rangeLowSeek = findViewById(R.id.rangeLowSeek)
+        rangeHighLabel = findViewById(R.id.rangeHighLabel)
+        rangeHighSeek = findViewById(R.id.rangeHighSeek)
 
         usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
         camera = FlirOneCamera(usbManager, this)
 
         saveButton.setOnClickListener { saveSnapshot() }
         paletteButton.setOnClickListener { cyclePalette() }
+        rangeButton.setOnClickListener { toggleRange() }
         blendButton.setOnClickListener { cycleBlend() }
         mirrorButton.setOnClickListener { toggleMirror() }
         rotateButton.setOnClickListener { cycleRotation() }
@@ -197,6 +240,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         onSpotCountChanged()
 
         setUpEmissivity()
+        setUpRangeControls()
         setUpOverlayControls()
 
         val filter = IntentFilter().apply {
@@ -365,7 +409,122 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         val clamped = value.coerceIn(Planck.MIN_EMISSIVITY, Planck.MAX_EMISSIVITY)
         planck = planck.copy(emissivity = clamped)
         emissivityLabel.text = getString(R.string.emissivity_label, clamped)
+        // A fixed window is stored in degrees, and emissivity just moved which counts
+        // those degrees correspond to. Without this the picture would keep the old
+        // window while the numbers beside it moved.
+        applyRange()
         refreshStatus()
+    }
+
+    /**
+     * Wires up the fixed contrast window and restores it, mode included.
+     *
+     * Remembered across launches for the same reason emissivity is: someone who
+     * fixed the scale to compare readings is in the middle of comparing them, and
+     * silently reverting to auto-gain between sessions would hand them two pictures
+     * that are not on the same scale without saying so.
+     */
+    private fun setUpRangeControls() {
+        rangeFixed = prefs.getBoolean(PREF_RANGE_FIXED, false)
+        rangeLowC = prefs.getInt(PREF_RANGE_LOW, DEFAULT_RANGE_LOW_C)
+        rangeHighC = prefs.getInt(PREF_RANGE_HIGH, DEFAULT_RANGE_HIGH_C)
+        clampRange()
+        syncRangeSeeks()
+        applyRange()
+
+        rangeLowSeek.setOnSeekBarChangeListener(rangeListener {
+            rangeLowC = it + RANGE_MIN_C
+            if (rangeHighC - rangeLowC < MIN_SPAN_C) {
+                // Push rather than block: a slider that stops dead under the finger
+                // reads as broken. The sliders' own bounds guarantee there is room.
+                rangeHighC = rangeLowC + MIN_SPAN_C
+                rangeHighSeek.progress = rangeHighC - RANGE_MIN_C
+            }
+        })
+
+        rangeHighSeek.setOnSeekBarChangeListener(rangeListener {
+            rangeHighC = it + RANGE_MIN_C
+            if (rangeHighC - rangeLowC < MIN_SPAN_C) {
+                rangeLowC = rangeHighC - MIN_SPAN_C
+                rangeLowSeek.progress = rangeLowC - RANGE_MIN_C
+            }
+        })
+    }
+
+    private fun rangeListener(onChange: (Int) -> Unit) = object : SeekBar.OnSeekBarChangeListener {
+        override fun onProgressChanged(bar: SeekBar, progress: Int, fromUser: Boolean) {
+            onChange(progress)
+            applyRange()
+        }
+
+        override fun onStartTrackingTouch(bar: SeekBar) = Unit
+
+        override fun onStopTrackingTouch(bar: SeekBar) = saveRange()
+    }
+
+    /**
+     * Switches between auto-gain and a fixed window.
+     *
+     * Fixing seeds the window from whatever auto-gain is showing at that moment,
+     * widened to whole degrees. The alternative - dropping the user into a window
+     * left over from some previous scene - blanks the picture to one flat colour at
+     * the exact moment they asked for control over it, and leaves them to find their
+     * way back by feel.
+     */
+    private fun toggleRange() {
+        rangeFixed = !rangeFixed
+        if (rangeFixed) {
+            renderer.autoRange?.let { auto ->
+                val lo = planck.rawToCelsius(auto.lo.roundToInt())
+                val hi = planck.rawToCelsius(auto.hi.roundToInt())
+                if (!lo.isNaN() && !hi.isNaN()) {
+                    rangeLowC = floor(lo).toInt()
+                    rangeHighC = ceil(hi).toInt()
+                }
+            }
+            clampRange()
+            syncRangeSeeks()
+        }
+        saveRange()
+        applyRange()
+    }
+
+    /** Keeps the window inside the sliders' reach and at least [MIN_SPAN_C] wide. */
+    private fun clampRange() {
+        rangeLowC = rangeLowC.coerceIn(RANGE_MIN_C, RANGE_MAX_C - MIN_SPAN_C)
+        rangeHighC = rangeHighC.coerceIn(rangeLowC + MIN_SPAN_C, RANGE_MAX_C)
+    }
+
+    private fun syncRangeSeeks() {
+        rangeLowSeek.progress = rangeLowC - RANGE_MIN_C
+        rangeHighSeek.progress = rangeHighC - RANGE_MIN_C
+    }
+
+    private fun saveRange() {
+        prefs.edit()
+            .putBoolean(PREF_RANGE_FIXED, rangeFixed)
+            .putInt(PREF_RANGE_LOW, rangeLowC)
+            .putInt(PREF_RANGE_HIGH, rangeHighC)
+            .apply()
+    }
+
+    /** Pushes the window down to the renderer as counts, and the mode up to the UI. */
+    private fun applyRange() {
+        val lo = planck.celsiusToRaw(rangeLowC.toDouble())
+        val hi = planck.celsiusToRaw(rangeHighC.toDouble())
+        // Falling back to auto-gain on a window the equation cannot express beats
+        // rendering against NaN, which would paint the whole frame one colour with
+        // nothing on screen to say why.
+        renderer.fixedRange =
+            if (rangeFixed && !lo.isNaN() && !hi.isNaN()) {
+                ContrastRange(lo.toFloat(), hi.toFloat())
+            } else {
+                null
+            }
+        rangeButton.setText(if (rangeFixed) R.string.range_fixed else R.string.range_auto)
+        rangeControls.visibility = if (rangeFixed) View.VISIBLE else View.GONE
+        rangeLowLabel.text = getString(R.string.range_low_label, rangeLowC)
+        rangeHighLabel.text = getString(R.string.range_high_label, rangeHighC)
     }
 
     /**

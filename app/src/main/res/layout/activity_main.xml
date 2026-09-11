@@ -89,6 +89,77 @@
         </LinearLayout>    </LinearLayout>
 
     <!--
+        The fixed contrast window, in degrees rather than counts - the point of
+        fixing it is to compare frames, and a comparison is made in the unit the
+        reader thinks in. Hidden while contrast is automatic, for the same reason
+        the alignment rows are hidden while the visible layer is off: the controls
+        would not be doing anything.
+
+        The two sliders overlap in range but cannot cross: the low one stops a
+        degree below the top of the scale, the high one a degree above the bottom,
+        and each pushes the other ahead of it rather than passing through.
+    -->
+    <LinearLayout
+        android:id="@+id/rangeControls"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
+
+            <TextView
+                android:id="@+id/rangeLowLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="96dp"
+                android:fontFamily="monospace"
+                android:textSize="14sp"
+                android:textColor="#DDDDDD" />
+
+            <SeekBar
+                android:id="@+id/rangeLowSeek"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:min="0"
+                android:max="169" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
+
+            <TextView
+                android:id="@+id/rangeHighLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="96dp"
+                android:fontFamily="monospace"
+                android:textSize="14sp"
+                android:textColor="#DDDDDD" />
+
+            <SeekBar
+                android:id="@+id/rangeHighSeek"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:min="1"
+                android:max="170" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!--
         Emissivity stays on screen rather than behind a settings toggle: it is the
         one number that has to change per target material, and a reading taken at
         the wrong value is wrong without looking wrong.
@@ -159,6 +230,16 @@
 
         <Button
             android:id="@+id/paletteButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="11sp"
+            android:paddingStart="0dp"
+            android:paddingEnd="0dp" />
+
+        <!-- Next to the palette: both decide what the colours mean. -->
+        <Button
+            android:id="@+id/rangeButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"

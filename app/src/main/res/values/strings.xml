@@ -6,6 +6,10 @@
     <string name="align_label">Align %1$+.3f</string>
     <string name="rotate_button">Rot %1$d°</string>
     <string name="emissivity_label">ε %1$.2f</string>
+    <string name="range_auto">Auto</string>
+    <string name="range_fixed">Fixed ✓</string>
+    <string name="range_low_label">Min %1$d°C</string>
+    <string name="range_high_label">Max %1$d°C</string>
     <string name="save_button">Save</string>
     <string name="saved_to">Saved to %1$s</string>
     <string name="save_failed">Could not save: %1$s</string>

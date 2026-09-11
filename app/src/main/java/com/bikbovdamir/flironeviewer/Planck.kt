@@ -86,6 +86,24 @@ data class Planck(
         return b / ln(ratio) - 273.15
     }
 
+    /**
+     * The inverse of [rawToCelsius]: which count a surface at [celsius] reads as.
+     *
+     * Needed because a fixed contrast window is set in degrees but applied to counts,
+     * and the mapping between the two is not fixed - it moves with [emissivity]. So
+     * the window has to be re-derived every time that slider does, or a window set at
+     * one emissivity would quietly mean different temperatures at another.
+     */
+    fun celsiusToRaw(celsius: Double): Double {
+        val kelvin = celsius + 273.15
+        if (kelvin <= 0) return Double.NaN
+        val ratio = exp(b / kelvin)
+        if (ratio <= f) return Double.NaN
+        val objectRaw = r1 / (r2 * (ratio - f)) - o
+        val scaled = objectRaw * emissivity + (1 - emissivity) * reflectedRaw
+        return scaled / usbScale
+    }
+
     companion object {
         /**
          * Bounds for the emissivity control. The upper end is the physical limit of a
