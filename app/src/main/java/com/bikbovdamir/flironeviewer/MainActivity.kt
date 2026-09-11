@@ -28,6 +28,7 @@ import android.hardware.usb.UsbManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.OrientationEventListener
 import android.view.View
 import android.widget.Button
 import android.widget.ScrollView
@@ -36,6 +37,7 @@ import android.widget.TextView
 import android.widget.Toast
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
+import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -81,6 +83,15 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         /** Where the window sits before it has ever been set: indoor scenes. */
         const val DEFAULT_RANGE_LOW_C = 15
         const val DEFAULT_RANGE_HIGH_C = 40
+
+        /**
+         * How far past halfway the phone has to be turned before the labels follow.
+         *
+         * Rounding at exactly 45 degrees makes them flip back and forth while the
+         * phone is held on a diagonal, which is far more distracting than being a
+         * little late to turn.
+         */
+        const val ROTATION_HYSTERESIS = 60
     }
 
     private val prefs by lazy { getSharedPreferences(PREFS, Context.MODE_PRIVATE) }
@@ -135,6 +146,30 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     private var rotation = ViewTransform.DEFAULT_ROTATION
 
     private val spotMeter = SpotMeter()
+
+    /**
+     * How far the phone itself is turned, in degrees clockwise from upright.
+     *
+     * The window is locked to portrait so that it cannot fight the camera bolted to
+     * it, which means turning the phone turns everything drawn in it - the spot
+     * readings included - and leaves them sideways to the person reading them. The
+     * accelerometer is the only thing left that still knows which way is up, and it
+     * is used for this and nothing else: the picture stays where the camera put it.
+     */
+    private var deviceRotation = 0
+
+    private val orientationListener by lazy {
+        object : OrientationEventListener(this) {
+            override fun onOrientationChanged(degrees: Int) {
+                // Reported when the phone is lying flat, where "up" has no meaning.
+                if (degrees == ORIENTATION_UNKNOWN) return
+                val snapped = snapRotation(degrees, deviceRotation)
+                if (snapped == deviceRotation) return
+                deviceRotation = snapped
+                thermalView.labelRotation = snapped
+            }
+        }
+    }
 
     /**
      * The fixed contrast window, held in degrees rather than in the counts the
@@ -271,10 +306,33 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Only while the view is actually being looked at - the accelerometer has no
+        // business running behind another app.
+        orientationListener.enable()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        orientationListener.disable()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         camera.stop()
         unregisterReceiver(usbReceiver)
+    }
+
+    /**
+     * Rounds the phone's angle to a right angle, holding on to the current one until
+     * it is [ROTATION_HYSTERESIS] degrees away rather than switching at the halfway
+     * mark.
+     */
+    private fun snapRotation(degrees: Int, current: Int): Int {
+        val fromCurrent = abs(((degrees - current + 540) % 360) - 180)
+        if (fromCurrent < ROTATION_HYSTERESIS) return current
+        return ((degrees + 45) / 90 % 4) * 90
     }
 
     // --- device plumbing ----------------------------------------------------------

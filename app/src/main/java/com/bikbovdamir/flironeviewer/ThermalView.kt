@@ -22,6 +22,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
+import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
@@ -50,6 +51,21 @@ class ThermalView @JvmOverloads constructor(
 
     var spots: List<SpotLabel> = emptyList()
 
+    /**
+     * How far the phone itself is turned, in degrees clockwise from upright.
+     *
+     * The spot labels are turned back by this much so they stay the right way up for
+     * whoever is reading them. The picture is deliberately left alone: the camera is
+     * bolted to the phone and turns with it, so the scene is already where it should
+     * be, while the reader's head is not attached to either.
+     */
+    var labelRotation: Int = 0
+        set(value) {
+            if (field == value) return
+            field = value
+            invalidate()
+        }
+
     /** Called with the spot's index and its new position in sensor coordinates. */
     var onSpotMoved: ((Int, Float, Float) -> Unit)? = null
 
@@ -57,6 +73,10 @@ class ThermalView @JvmOverloads constructor(
     private val matrix = Matrix()
     private val inverse = Matrix()
     private val point = FloatArray(2)
+
+    /** Scratch for placing labels in the turned frame; reused to keep onDraw allocation-free. */
+    private val labelMatrix = Matrix()
+    private val labelBounds = RectF()
 
     private val imagePaint = Paint().apply {
         // 80x60 blown up to a phone screen: interpolation just smears the pixels, and
@@ -140,20 +160,50 @@ class ThermalView @JvmOverloads constructor(
             canvas.drawLine(x, y + r * 0.5f, x, y + r * 1.7f, paint)
         }
 
+        // Only the labels turn, not the crosshair: a ring with four ticks at right
+        // angles looks the same whichever way up it is, so turning it would cost a
+        // save/restore to change nothing.
+        canvas.save()
+        canvas.rotate(-labelRotation.toFloat(), x, y)
+        boundsInLabelFrame(x, y, labelBounds)
+
         // The reading gets the prime spot beside the crosshair, where the eye lands.
         // The number is only there to tell one spot from another, so it goes up and
         // to the left, out of the way of the figure that is actually being read.
+        // "Beside" and "up" mean from the reader's side, which is why the edges below
+        // are the view's edges as seen in this turned frame rather than the window's.
         val reading = spot.text
         val readingWidth = textPaint.measureText(reading)
-        val left = if (x + r * 2f + readingWidth < width) x + r * 2f else x - r * 2f - readingWidth
-        val baseline = (y + 5f * density).coerceIn(textPaint.textSize, height - 4f * density)
+        val left = if (x + r * 2f + readingWidth < labelBounds.right) x + r * 2f
+        else x - r * 2f - readingWidth
+        val baseline = (y + 5f * density).coerceIn(
+            labelBounds.top + textPaint.textSize,
+            labelBounds.bottom - 4f * density,
+        )
         drawLabel(canvas, reading, left, baseline, textPaint, textShadow)
 
         val number = spot.number.toString()
-        val numberX = (x - r * 1.5f - numberPaint.measureText(number))
-            .coerceIn(0f, width - numberPaint.measureText(number))
-        val numberY = (y - r * 1.5f).coerceAtLeast(numberPaint.textSize)
+        val numberWidth = numberPaint.measureText(number)
+        val numberX = (x - r * 1.5f - numberWidth)
+            .coerceIn(labelBounds.left, labelBounds.right - numberWidth)
+        val numberY = (y - r * 1.5f).coerceAtLeast(labelBounds.top + numberPaint.textSize)
         drawLabel(canvas, number, numberX, numberY, numberPaint, numberShadow)
+        canvas.restore()
+    }
+
+    /**
+     * The view's edges as they fall in the label frame turned about ([x], [y]).
+     *
+     * Keeping a label on screen means comparing it against the screen, and the two
+     * frames only agree while the phone is upright. Turning the view's own rectangle
+     * by the same angle puts both back in one frame; at right angles the mapped
+     * rectangle is exact rather than a bounding box, so nothing is lost by it.
+     */
+    private fun boundsInLabelFrame(x: Float, y: Float, into: RectF) {
+        into.set(0f, 0f, width.toFloat(), height.toFloat())
+        if (labelRotation == 0) return
+        labelMatrix.setRotate(labelRotation.toFloat(), x, y)
+        labelMatrix.mapRect(into)
     }
 
     /** Outline first, then the glyphs: legible over a light scene as well as a dark one. */
