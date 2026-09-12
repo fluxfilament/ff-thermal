@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The F&F palette, as used by the design canvas this interface was drawn on
+    (wiki/own/projects/flux-filament/design-book in the author's notes).
+
+    Named by role rather than by hue so a light theme can be dropped in later
+    without touching a single layout: only these values change.
+-->
+<resources>
+    <color name="ff_bg">#211B15</color>
+    <color name="ff_surface">#2A231B</color>
+    <color name="ff_text">#EFE7D8</color>
+    <!-- One step down from ff_text, for the labels of controls: section headings are
+         the brightest thing on a settings screen, the controls under them come next,
+         and their explanations come last. -->
+    <color name="ff_text_soft">#CFC6B6</color>
+    <color name="ff_muted">#A69A85</color>
+    <color name="ff_border">#453A2C</color>
+    <color name="ff_accent">#D97A3D</color>
+    <color name="ff_accent2">#4FC3E0</color>
+    <!-- Darker than the background: the picture is the subject, and it needs a well
+         to sit in rather than blending into the chrome around it. -->
+    <color name="ff_well">#0E0B07</color>
+    <color name="ff_code_bg">#161C20</color>
+    <color name="ff_on_accent">#0B1A1F</color>
+    <color name="ff_scrim">#80140B07</color>
+</resources>

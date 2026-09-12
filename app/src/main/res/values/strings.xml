@@ -1,22 +1,139 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    The interface is in Russian, which is the language it was designed in and the
+    language its only user reads. It is deliberately not split into values/ (English)
+    and values-ru/ yet: how many languages are worth carrying is an open question in
+    the author's notes, and guessing at the split before answering it would mean
+    redoing it. See todo: "Анализ локализации FLIR One".
+-->
 <resources>
     <string name="app_name">FLIR One Viewer</string>
-    <string name="thermal_view_description">Live thermal image</string>
-    <string name="fov_label">FOV %1$.2f</string>
-    <string name="align_label">Align %1$+.3f</string>
-    <string name="rotate_button">Rot %1$d°</string>
-    <string name="emissivity_label">ε %1$.2f</string>
-    <string name="range_auto">Auto</string>
-    <string name="range_fixed">Fixed ✓</string>
-    <string name="range_low_label">Min %1$d°C</string>
-    <string name="range_high_label">Max %1$d°C</string>
-    <string name="save_button">Save</string>
-    <string name="saved_to">Saved to %1$s</string>
-    <string name="save_failed">Could not save: %1$s</string>
-    <string name="nothing_to_save">No frame to save yet</string>
-    <string name="log_button">Log</string>
-    <string name="spot_minus">Spot −</string>
-    <string name="spot_plus">Spot +</string>
-    <string name="mirror_on">Mirror ✓</string>
-    <string name="mirror_off">Mirror</string>
+    <string name="thermal_view_description">Живой тепловой кадр</string>
+
+    <!-- live screen -->
+    <string name="state_live">[LIVE]</string>
+    <string name="state_calibrating">[КАЛИБРОВКА]</string>
+    <string name="state_no_camera">[НЕТ КАМЕРЫ]</string>
+    <string name="state_waiting">[ОЖИДАНИЕ]</string>
+    <string name="geometry">%1$d×%2$d · LEPTON %3$s</string>
+    <string name="geometry_short">%1$d×%2$d</string>
+    <string name="geometry_unknown">ГЕОМЕТРИЯ НЕИЗВЕСТНА</string>
+    <string name="align_label">Align %1$s</string>
+    <string name="align_description">Совмещение слоёв по расстоянию</string>
+    <string name="scale_min">MIN</string>
+    <string name="scale_max">MAX</string>
+    <string name="scale_low_description">Нижняя граница шкалы</string>
+    <string name="scale_high_description">Верхняя граница шкалы</string>
+    <string name="lock_locked_description">Шкала зафиксирована. Нажмите, чтобы вернуть авто</string>
+    <string name="lock_auto_description">Шкала следует за сценой. Нажмите, чтобы зафиксировать</string>
+    <string name="emissivity_chip">ε %1$s</string>
+    <string name="degrees_short">%1$s°</string>
+    <string name="settings_description">Настройки</string>
+    <string name="blend_description">Режим наложения видимого канала</string>
+    <string name="mirror_description">Зеркальное отображение</string>
+    <string name="mirror_label">ЗЕРК</string>
+    <string name="shutter_description">Сохранить снимок</string>
+    <string name="spot_minus_description">Убрать точку замера</string>
+    <string name="spot_plus_description">Добавить точку замера</string>
+    <string name="spots_label">ТОЧЕК</string>
+
+    <!-- blend modes, as they appear under the tool icon -->
+    <string name="blend_thermal">ИК</string>
+    <string name="blend_mix35">ИК 35</string>
+    <string name="blend_mix60">ИК 60</string>
+    <string name="blend_visible">ВИД</string>
+
+    <!-- scale sheet -->
+    <string name="sheet_low">Нижняя граница</string>
+    <string name="sheet_high">Верхняя граница</string>
+    <string name="sheet_celsius">%1$d °C</string>
+    <string name="sheet_other_low">низ %1$d °C</string>
+    <string name="sheet_other_high">верх %1$d °C</string>
+    <string name="sheet_fixed">[ФИКСАЦИЯ]</string>
+    <string name="sheet_will_fix">Сдвиньте — шкала зафиксируется</string>
+    <string name="sheet_done">Готово</string>
+    <string name="close">Закрыть</string>
+    <string name="back">Назад</string>
+
+    <!-- settings -->
+    <string name="settings_title">Настройки</string>
+    <string name="section_image">Изображение</string>
+    <string name="field_palette">Палитра</string>
+    <string name="field_rotation">Поворот кадра</string>
+    <string name="rotation_option">%1$d°</string>
+    <string name="section_measurement">Измерение</string>
+    <string name="row_emissivity">Излучательная способность</string>
+    <string name="emissivity_summary">ε %1$s · %2$s</string>
+    <string name="emissivity_custom">своё значение</string>
+    <string name="section_alignment">Совмещение камер</string>
+    <string name="row_fov">Поле зрения (FOV)</string>
+    <string name="fov_summary">%1$s · по умолчанию 0,77</string>
+    <string name="align_note">Сдвиг слоёв по расстоянию (Align) — на главном экране, в режимах наложения.</string>
+    <string name="section_calibration">Калибровка</string>
+    <string name="row_calibration">Калибровка</string>
+    <string name="stamp_wip">[В РАБОТЕ]</string>
+    <string name="section_diagnostics">Диагностика</string>
+    <string name="row_log">Журнал</string>
+    <string name="log_summary">%1$s fps · FFC %2$d · resync %3$d</string>
+    <string name="log_summary_idle">поток остановлен</string>
+    <string name="stamp_design">[F&amp;F DESIGN]</string>
+
+    <!-- emissivity screen -->
+    <string name="emissivity_title">Излучательная способность</string>
+    <string name="emissivity_current">Текущее значение</string>
+    <string name="emissivity_big">ε %1$s</string>
+    <string name="emissivity_surface">%1$s поверхность</string>
+    <string name="emissivity_own">Своё значение</string>
+    <string name="section_gloss">Блеск поверхности</string>
+    <string name="preset_matte">Матовая</string>
+    <string name="preset_matte_examples">Краска, кирпич, дерево, пластик, кожа</string>
+    <string name="preset_semi_matte">Полуматовая</string>
+    <string name="preset_semi_matte_examples">Слабый блеск</string>
+    <string name="preset_semi_gloss">Полуглянцевая</string>
+    <string name="preset_semi_gloss_examples">Заметный блеск</string>
+    <string name="preset_gloss">Глянцевая</string>
+    <string name="preset_gloss_examples">Сильный блеск: поверхность отражает окружение</string>
+    <string name="stamp_default">[ПО УМОЛЧАНИЮ]</string>
+    <string name="preset_metal">Полированный металл</string>
+    <string name="preset_metal_note">Ниже 0,30: поверхность больше отражает, чем излучает, а поправка усиливает шум сенсора. Замер ненадёжен.</string>
+    <string name="stamp_unreliable">[НЕНАДЁЖНО]</string>
+    <string name="section_why">Почему это важно</string>
+    <string name="why_header_eps">ε</string>
+    <string name="why_header_hot">Горячая точка</string>
+    <string name="why_note">Один и тот же объект, та же камера, меняли только ε. Чем горячее объект относительно комнаты, тем сильнее ошибка.</string>
+    <string name="section_recommendation">Рекомендация</string>
+    <string name="recommendation">Не знаете поверхность — оставьте 0,95: большинство бытовых поверхностей матовые. На блестящий металл наклейте кусок изоленты или матового скотча и мерьте по нему.</string>
+
+    <!-- field of view screen -->
+    <string name="fov_title">Поле зрения</string>
+    <string name="fov_reset">Сброс</string>
+    <string name="fov_value">FOV</string>
+    <string name="fov_default">по умолчанию 0,77</string>
+    <string name="fov_note">Двигайте, пока край предмета не сойдётся по обе стороны линии.</string>
+    <string name="fov_tag_thermal">ИК</string>
+    <string name="fov_tag_visible">ВИДИМАЯ</string>
+    <string name="fov_split_description">Граница сравнения камер</string>
+    <string name="fov_description">Поле зрения</string>
+
+    <!-- calibration screen -->
+    <string name="calibration_title">Калибровка</string>
+    <string name="calibration_empty_eyebrow">Раздел в разработке</string>
+    <string name="calibration_empty">Содержание раздела проработаем позже.</string>
+
+    <!-- log screen -->
+    <string name="log_title">Журнал</string>
+    <string name="stat_frame">Кадр</string>
+    <string name="stat_lepton">Lepton</string>
+    <string name="stat_stream">Поток</string>
+    <string name="stat_ffc">FFC</string>
+    <string name="stat_resync">Resync</string>
+    <string name="stat_scene">Сцена, °C</string>
+    <string name="stat_none">—</string>
+    <string name="stat_fps">%1$s fps</string>
+    <string name="stat_scene_range">%1$s…%2$s</string>
+
+    <!-- snapshots -->
+    <string name="saved_to">Снимок сохранён · %1$s</string>
+    <string name="save_failed">Не удалось сохранить: %1$s</string>
+    <string name="nothing_to_save">Кадра ещё нет</string>
 </resources>

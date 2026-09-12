@@ -1,314 +1,171 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    One window, six screens, and an overlay for the scale sheet.
+
+    Screens are sibling views rather than separate activities, for one hard reason:
+    the USB connection and the camera's one-shot sledInformation message live with
+    this activity, and handing the window to another activity risks tearing the stream
+    down mid-flight. It also means the field-of-view screen can show live frames
+    rather than a frozen one, which is the whole point of a calibration screen.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#000000"
+    android:background="@color/ff_bg"
     android:keepScreenOn="true">
 
-    <TextView
-        android:id="@+id/statusView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="8dp"
-        android:fontFamily="monospace"
-        android:textSize="12sp"
-        android:textColor="#DDDDDD" />
-
-    <com.bikbovdamir.flironeviewer.ThermalView
-        android:id="@+id/thermalView"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="#000000"
-        android:contentDescription="@string/thermal_view_description" />
+    <include layout="@layout/screen_live" />
+    <include layout="@layout/screen_settings" />
+    <include layout="@layout/screen_emissivity" />
+    <include layout="@layout/screen_fov" />
+    <include layout="@layout/screen_calibration" />
+    <include layout="@layout/screen_log" />
 
     <!--
-        Only meaningful while the visible layer is mixed in, so it stays out of the
-        way otherwise. Two controls because the two misalignments are different in
-        kind: the field-of-view crop is fixed by the optics, the parallax shift moves
-        with how far away the subject is.
+        The sheet sits above the legend and the bottom bar rather than over them: the
+        scale ends it is editing are in the legend, and covering them would mean
+        setting a number while the thing it changes is hidden.
     -->
-    <LinearLayout
-        android:id="@+id/overlayControls"
+    <FrameLayout
+        android:id="@+id/sheetLayer"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:layout_height="match_parent"
         android:visibility="gone">
 
-        <LinearLayout
+        <View
+            android:id="@+id/sheetScrim"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp">
-
-            <TextView
-                android:id="@+id/fovLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minWidth="96dp"
-                android:fontFamily="monospace"
-                android:textSize="14sp"
-                android:textColor="#DDDDDD" />
-
-            <SeekBar
-                android:id="@+id/fovSeek"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:min="40"
-                android:max="120" />
-        </LinearLayout>
+            android:layout_height="match_parent"
+            android:background="@color/ff_scrim"
+            android:clickable="true"
+            android:focusable="true" />
 
         <LinearLayout
+            android:id="@+id/sheetRange"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp">
+            android:layout_gravity="bottom"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="240dp"
+            android:background="@drawable/bg_sheet"
+            android:orientation="vertical"
+            android:paddingStart="16dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="4dp"
+            android:paddingBottom="14dp">
 
-            <TextView
-                android:id="@+id/alignLabel"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minWidth="96dp"
-                android:fontFamily="monospace"
-                android:textSize="14sp"
-                android:textColor="#DDDDDD" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/sheetTitle"
+                    style="@style/Ff.Eyebrow"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="@color/ff_muted" />
+
+                <ImageButton
+                    android:id="@+id/sheetClose"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/close"
+                    android:src="@drawable/ic_close" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:minHeight="52dp"
+                android:orientation="horizontal"
+                android:paddingEnd="12dp">
+
+                <TextView
+                    android:id="@+id/sheetValue"
+                    style="@style/Ff.Mono"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="42sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/sheetStamp"
+                    style="@style/Ff.Stamp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:background="@drawable/bg_stamp_done"
+                    android:text="@string/sheet_fixed"
+                    android:textColor="@color/ff_accent" />
+
+                <TextView
+                    android:id="@+id/sheetHint"
+                    style="@style/Ff.Note"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:text="@string/sheet_will_fix" />
+            </LinearLayout>
 
             <SeekBar
-                android:id="@+id/alignSeek"
-                android:layout_width="0dp"
+                android:id="@+id/sheetSeek"
+                style="@style/Ff.Seek"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:min="0"
-                android:max="100" />
-        </LinearLayout>    </LinearLayout>
-
-    <!--
-        The fixed contrast window, in degrees rather than counts - the point of
-        fixing it is to compare frames, and a comparison is made in the unit the
-        reader thinks in. Hidden while contrast is automatic, for the same reason
-        the alignment rows are hidden while the visible layer is off: the controls
-        would not be doing anything.
-
-        The two sliders overlap in range but cannot cross: the low one stops a
-        degree below the top of the scale, the high one a degree above the bottom,
-        and each pushes the other ahead of it rather than passing through.
-    -->
-    <LinearLayout
-        android:id="@+id/rangeControls"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:visibility="gone">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp">
-
-            <TextView
-                android:id="@+id/rangeLowLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minWidth="96dp"
-                android:fontFamily="monospace"
-                android:textSize="14sp"
-                android:textColor="#DDDDDD" />
-
-            <SeekBar
-                android:id="@+id/rangeLowSeek"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:min="0"
-                android:max="169" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp">
-
-            <TextView
-                android:id="@+id/rangeHighLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minWidth="96dp"
-                android:fontFamily="monospace"
-                android:textSize="14sp"
-                android:textColor="#DDDDDD" />
-
-            <SeekBar
-                android:id="@+id/rangeHighSeek"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:min="1"
+                android:layout_marginEnd="12dp"
                 android:max="170" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="-10dp"
+                android:orientation="horizontal"
+                android:paddingEnd="12dp">
+
+                <TextView
+                    style="@style/Ff.Mono"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="−20 °C"
+                    android:textColor="@color/ff_muted"
+                    android:textSize="10.5sp" />
+
+                <TextView
+                    android:id="@+id/sheetOther"
+                    style="@style/Ff.Mono"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center_horizontal"
+                    android:textColor="@color/ff_muted"
+                    android:textSize="10.5sp" />
+
+                <TextView
+                    style="@style/Ff.Mono"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="150 °C"
+                    android:textColor="@color/ff_muted"
+                    android:textSize="10.5sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/sheetDone"
+                style="@style/Ff.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="10dp"
+                android:layout_marginEnd="12dp"
+                android:text="@string/sheet_done" />
         </LinearLayout>
-    </LinearLayout>
-
-    <!--
-        Emissivity stays on screen rather than behind a settings toggle: it is the
-        one number that has to change per target material, and a reading taken at
-        the wrong value is wrong without looking wrong.
-    -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp">
-
-        <TextView
-            android:id="@+id/emissivityLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:minWidth="72dp"
-            android:fontFamily="monospace"
-            android:textSize="14sp"
-            android:textColor="#DDDDDD" />
-
-        <SeekBar
-            android:id="@+id/emissivitySeek"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:min="10"
-            android:max="100" />
-    </LinearLayout>
-
-    <ScrollView
-        android:id="@+id/logScroll"
-        android:layout_width="match_parent"
-        android:layout_height="200dp">
-
-        <TextView
-            android:id="@+id/logView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="8dp"
-            android:fontFamily="monospace"
-            android:textSize="10sp"
-            android:textColor="#AAAAAA"
-            android:textIsSelectable="true" />
-    </ScrollView>
-
-    <!--
-        Pinned at the bottom on purpose. The alignment rows above appear and vanish
-        with the blend mode, and when the buttons sat above them the row jumped the
-        instant it was pressed - the button moved out from under the finger that had
-        just tapped it. Down here nothing above can move it, and it is a better place
-        for a thumb anyway.
-    -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/saveButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="11sp"
-            android:paddingStart="0dp"
-            android:paddingEnd="0dp"
-            android:text="@string/save_button" />
-
-        <Button
-            android:id="@+id/paletteButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="11sp"
-            android:paddingStart="0dp"
-            android:paddingEnd="0dp" />
-
-        <!-- Next to the palette: both decide what the colours mean. -->
-        <Button
-            android:id="@+id/rangeButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="11sp"
-            android:paddingStart="0dp"
-            android:paddingEnd="0dp" />
-
-        <Button
-            android:id="@+id/blendButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="11sp"
-            android:paddingStart="0dp"
-            android:paddingEnd="0dp" />
-
-        <Button
-            android:id="@+id/rotateButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="11sp"
-            android:paddingStart="0dp"
-            android:paddingEnd="0dp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/mirrorButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="11sp"
-            android:paddingStart="0dp"
-            android:paddingEnd="0dp" />
-
-        <Button
-            android:id="@+id/logButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="11sp"
-            android:paddingStart="0dp"
-            android:paddingEnd="0dp"
-            android:text="@string/log_button" />
-
-        <Button
-            android:id="@+id/spotMinusButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="11sp"
-            android:paddingStart="0dp"
-            android:paddingEnd="0dp"
-            android:text="@string/spot_minus" />
-
-        <Button
-            android:id="@+id/spotPlusButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="11sp"
-            android:paddingStart="0dp"
-            android:paddingEnd="0dp"
-            android:text="@string/spot_plus" />
-    </LinearLayout>
-
-</LinearLayout>
+    </FrameLayout>
+</FrameLayout>

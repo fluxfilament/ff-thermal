@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- A small-caps monospaced label: the eyebrow over a section. White, because a
+         heading that does not stand out is not doing its job. -->
+    <style name="Ff.Eyebrow" parent="">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:letterSpacing">0.14</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/ff_text</item>
+    </style>
+
+    <style name="Ff.Mono" parent="">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textColor">@color/ff_text</item>
+    </style>
+
+    <!-- [LIVE], [В РАБОТЕ], [ФИКСАЦИЯ]: a boxed status word. The box is drawn by the
+         background, whose stroke colour is what distinguishes the three kinds. -->
+    <style name="Ff.Stamp" parent="">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">10.5sp</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+        <item name="android:paddingTop">3dp</item>
+        <item name="android:paddingBottom">3dp</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <!-- Screen title in a header row. -->
+    <style name="Ff.Title" parent="">
+        <item name="android:textSize">17sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/ff_text</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
+    <!-- The name of a control, or of a row that leads somewhere. -->
+    <style name="Ff.RowTitle" parent="">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@color/ff_text_soft</item>
+    </style>
+
+    <!-- What that control currently says, or what the row is about. -->
+    <style name="Ff.RowSub" parent="">
+        <item name="android:textSize">13.5sp</item>
+        <item name="android:lineSpacingMultiplier">1.25</item>
+        <item name="android:textColor">@color/ff_muted</item>
+    </style>
+
+    <style name="Ff.Note" parent="">
+        <item name="android:textSize">13.5sp</item>
+        <item name="android:lineSpacingMultiplier">1.35</item>
+        <item name="android:textColor">@color/ff_muted</item>
+    </style>
+
+    <!--
+        Sliders: 48 dp tall so the thumb is a real touch target, and the track is
+        drawn flat to match the rest of the chrome. The thumb is square-ish on purpose
+        - round thumbs read as a volume control, and this is an instrument setting.
+    -->
+    <style name="Ff.Seek" parent="@android:style/Widget.DeviceDefault.SeekBar">
+        <item name="android:minHeight">48dp</item>
+        <item name="android:maxHeight">4dp</item>
+        <item name="android:progressDrawable">@drawable/seek_track</item>
+        <item name="android:thumb">@drawable/seek_thumb</item>
+        <item name="android:thumbOffset">0dp</item>
+        <item name="android:splitTrack">false</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+    </style>
+
+    <!-- A tool in the bottom bar: icon over a tiny caption, 56 dp square. -->
+    <style name="Ff.ToolLabel" parent="">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:letterSpacing">0.06</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textColor">@color/ff_muted</item>
+    </style>
+
+    <!-- Uppercase monospaced action button, e.g. "Готово" in the scale sheet. -->
+    <style name="Ff.Button" parent="">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:letterSpacing">0.06</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textColor">@color/ff_on_accent</item>
+        <item name="android:background">@drawable/bg_button</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingStart">20dp</item>
+        <item name="android:paddingEnd">20dp</item>
+        <item name="android:gravity">center</item>
+    </style>
+</resources>

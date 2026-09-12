@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Layout A ("Камера") from the design canvas: one big shutter in the middle, the two
+    view toggles to its left, the spot counter to its right with "-" and "+" held
+    apart by the count between them. Every target is at least 48 dp with at least
+    8 dp between neighbours - the previous row was 36 dp tall, zero-gap, and partly
+    under the home-gesture strip.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/screenLive"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="4dp">
+
+        <TextView
+            android:id="@+id/stateStamp"
+            style="@style/Ff.Stamp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_stamp_wip"
+            android:text="@string/state_live"
+            android:textColor="@color/ff_accent2" />
+
+        <TextView
+            android:id="@+id/geometryView"
+            style="@style/Ff.Mono"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:letterSpacing="0.06"
+            android:maxLines="1"
+            android:textColor="@color/ff_muted"
+            android:textSize="11sp" />
+
+        <ImageButton
+            android:id="@+id/settingsButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/settings_description"
+            android:src="@drawable/ic_settings" />
+    </LinearLayout>
+
+    <!-- Only while the visible layer is mixed in: off, it would be a slider that
+         changes nothing. Distance is the one alignment that moves with the subject,
+         which is why it stays on the main screen while the field of view went into
+         settings. -->
+    <LinearLayout
+        android:id="@+id/alignRow"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="32dp"
+        android:paddingEnd="32dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/alignLabel"
+            style="@style/Ff.Mono"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="100dp"
+            android:maxLines="1"
+            android:letterSpacing="0.06"
+            android:textColor="@color/ff_muted"
+            android:textSize="11sp" />
+
+        <SeekBar
+            android:id="@+id/alignSeek"
+            style="@style/Ff.Seek"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:contentDescription="@string/align_description"
+            android:max="200" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/imageArea"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@color/ff_well">
+
+        <com.bikbovdamir.flironeviewer.ThermalView
+            android:id="@+id/thermalView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/thermal_view_description" />
+
+        <!-- Shutter feedback. A saved frame is otherwise indistinguishable from a
+             missed tap until the toast arrives. -->
+        <View
+            android:id="@+id/flashView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:alpha="0"
+            android:background="#FFFFFF" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/legend"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp">
+
+        <com.bikbovdamir.flironeviewer.ScaleBarView
+            android:id="@+id/scaleBar"
+            android:layout_width="match_parent"
+            android:layout_height="36dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/rangeLowButton"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:contentDescription="@string/scale_low_description"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:minWidth="84dp"
+                android:orientation="vertical"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp">
+
+                <TextView
+                    style="@style/Ff.Mono"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.1"
+                    android:text="@string/scale_min"
+                    android:textColor="@color/ff_muted"
+                    android:textSize="10.5sp" />
+
+                <TextView
+                    android:id="@+id/rangeLowValue"
+                    style="@style/Ff.Mono"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:textColor="@color/ff_accent2"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageButton
+                android:id="@+id/lockButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_tool"
+                android:contentDescription="@string/lock_auto_description"
+                android:src="@drawable/ic_lock_open" />
+
+            <!-- Stays on the main screen even though the setting itself moved away: a
+                 wrong emissivity gives readings that look right and are not. -->
+            <TextView
+                android:id="@+id/emissivityChip"
+                style="@style/Ff.Mono"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_tool"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <LinearLayout
+                android:id="@+id/rangeHighButton"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:contentDescription="@string/scale_high_description"
+                android:focusable="true"
+                android:gravity="center_vertical|end"
+                android:minWidth="84dp"
+                android:orientation="vertical"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp">
+
+                <TextView
+                    style="@style/Ff.Mono"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.1"
+                    android:text="@string/scale_max"
+                    android:textColor="@color/ff_muted"
+                    android:textSize="10.5sp" />
+
+                <TextView
+                    android:id="@+id/rangeHighValue"
+                    style="@style/Ff.Mono"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:textColor="@color/ff_accent2"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/ff_border" />
+
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="96dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
+
+        <LinearLayout
+            android:id="@+id/blendTool"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@drawable/bg_tool"
+            android:clickable="true"
+            android:contentDescription="@string/blend_description"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/blendIcon"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_blend" />
+
+            <TextView
+                android:id="@+id/blendLabel"
+                style="@style/Ff.ToolLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/mirrorTool"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_tool"
+            android:clickable="true"
+            android:contentDescription="@string/mirror_description"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/mirrorIcon"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_mirror" />
+
+            <TextView
+                android:id="@+id/mirrorLabel"
+                style="@style/Ff.ToolLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/mirror_label" />
+        </LinearLayout>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <FrameLayout
+            android:id="@+id/shutterButton"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:background="@drawable/bg_shutter_ring"
+            android:clickable="true"
+            android:contentDescription="@string/shutter_description"
+            android:focusable="true">
+
+            <View
+                android:id="@+id/shutterCore"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_shutter_core" />
+        </FrameLayout>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <!-- Opposite actions, held apart by the number they act on: the old row had
+             them touching, with nothing between a spot added and a spot removed. -->
+        <ImageButton
+            android:id="@+id/spotMinusButton"
+            android:layout_width="48dp"
+            android:layout_height="56dp"
+            android:background="@drawable/bg_tool"
+            android:contentDescription="@string/spot_minus_description"
+            android:src="@drawable/ic_minus" />
+
+        <LinearLayout
+            android:layout_width="36dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/spotCountValue"
+                style="@style/Ff.Mono"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:includeFontPadding="false"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                style="@style/Ff.Mono"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.06"
+                android:text="@string/spots_label"
+                android:textColor="@color/ff_muted"
+                android:textSize="9.5sp" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/spotPlusButton"
+            android:layout_width="48dp"
+            android:layout_height="56dp"
+            android:background="@drawable/bg_tool"
+            android:contentDescription="@string/spot_plus_description"
+            android:src="@drawable/ic_plus" />
+    </LinearLayout>
+</LinearLayout>

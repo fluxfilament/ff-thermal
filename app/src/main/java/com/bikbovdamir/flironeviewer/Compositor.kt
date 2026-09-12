@@ -121,6 +121,24 @@ class Compositor {
     }
 
     /**
+     * The frame's visible-light image on its own, decoded.
+     *
+     * For the field-of-view screen, which needs the two layers side by side rather
+     * than mixed. Use a Compositor of its own for that: the decoder reuses one bitmap
+     * between frames, so sharing an instance with the live view would hand the screen
+     * a picture the camera thread is in the middle of overwriting.
+     */
+    fun decodeVisible(frame: ThermalFrame): Bitmap? = frame.jpeg?.let { decode(it) }
+
+    /**
+     * Where the visible frame lands on an [outW] x [outH] thermal grid at the current
+     * crop and alignment - the same placement [compose] uses, handed out so another
+     * view can draw the layer itself. A copy, because the internal matrix is reused.
+     */
+    fun visibleMatrix(vis: Bitmap, outW: Int, outH: Int): Matrix =
+        Matrix(placeVisible(vis, outW, outH))
+
+    /**
      * Maps the region of the visible frame that matches the thermal field of view
      * onto the whole output.
      *

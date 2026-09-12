@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The open state has to look open: the same hasp, swung off the body about the foot
+    it is hinged on. A shortened hasp (which is what the canvas first drew) reads as a
+    smaller closed lock rather than an open one.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <group android:rotation="28" android:pivotX="16" android:pivotY="11">
+        <path android:pathData="M8 11V7L10 5H14L16 7V11" android:strokeColor="@color/ff_text" android:strokeWidth="2" />
+    </group>
+    <path android:pathData="M5 11H19V21H5Z" android:strokeColor="@color/ff_text" android:strokeWidth="2" />
+    <path android:pathData="M12 15V17" android:strokeColor="@color/ff_text" android:strokeWidth="2" />
+</vector>

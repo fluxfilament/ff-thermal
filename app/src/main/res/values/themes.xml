@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        NoActionBar: the system title bar was covering the top 116 px of the thermal
+        view, and with the spot labels turning with the phone it started covering the
+        readings as well. The screens draw their own headers, which also lets the live
+        view start at the very top of the window.
+
+        The window is deliberately left edge-to-edge (the default from targetSdk 35
+        on) and the insets are applied as padding where they belong - see
+        MainActivity.applyInsets. Reserving a fixed 32 dp instead would be wrong on
+        any phone but the one it was measured on.
+    -->
+    <style name="Theme.FlirOneViewer" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@color/ff_bg</item>
+        <item name="android:textColorPrimary">@color/ff_text</item>
+        <item name="android:textColorSecondary">@color/ff_muted</item>
+        <item name="android:colorAccent">@color/ff_accent2</item>
+    </style>
+</resources>
