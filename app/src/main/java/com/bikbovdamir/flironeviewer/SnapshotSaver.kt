@@ -35,32 +35,54 @@ import java.util.Locale
  * the hard edges of a thermal image would corrupt exactly the parts worth looking
  * at, for no meaningful saving on a file this small.
  *
- * Saved at the sensor's own resolution, with nothing interpolated. A viewer will
- * scale it up, but the file itself stays one pixel per detector.
+ * Each shutter press writes two files under the same name. The album itself gets the
+ * card from [SnapshotCard] - the picture with the scale, the spots and the settings
+ * on it, which is what anyone looking at a thermal image actually needs. A [RAW]
+ * subfolder gets the sensor's own pixels, nothing interpolated and nothing drawn
+ * over, so the measurement survives whatever the card's layout later becomes.
  */
 object SnapshotSaver {
 
     private const val ALBUM = "FlirOneViewer"
 
+    /** Where the untouched sensor picture goes, beside the album rather than in it. */
+    private const val RAW = "raw"
+
     class Result(val displayPath: String)
 
-    fun save(context: Context, bitmap: Bitmap): Result {
-        val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
-        val name = "flir-$stamp.png"
+    /** A name for both files of one shutter press, so the pair stays obvious. */
+    fun nameFor(takenAt: Date): String =
+        "flir-" + SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(takenAt) + ".png"
+
+    /**
+     * Writes [bitmap] as [name]. [subfolder] puts it under the album rather than in
+     * it; the returned path is what to tell the user.
+     */
+    fun save(context: Context, bitmap: Bitmap, name: String, subfolder: String? = null): Result {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            saveViaMediaStore(context, bitmap, name)
+            saveViaMediaStore(context, bitmap, name, subfolder)
         } else {
-            saveToAppStorage(context, bitmap, name)
+            saveToAppStorage(context, bitmap, name, subfolder)
         }
     }
+
+    /** The sensor's own pixels, kept out of the album so the gallery shows one picture. */
+    fun saveRaw(context: Context, bitmap: Bitmap, name: String): Result =
+        save(context, bitmap, name, RAW)
 
     /**
      * Android 10+: MediaStore takes the file into shared storage with no storage
      * permission at all. IS_PENDING hides the entry until the bytes are written, so
      * a gallery scanning at the wrong moment never sees a half-file.
      */
-    private fun saveViaMediaStore(context: Context, bitmap: Bitmap, name: String): Result {
-        val relative = "${Environment.DIRECTORY_PICTURES}/$ALBUM"
+    private fun saveViaMediaStore(
+        context: Context,
+        bitmap: Bitmap,
+        name: String,
+        subfolder: String?,
+    ): Result {
+        val album = if (subfolder == null) ALBUM else "$ALBUM/$subfolder"
+        val relative = "${Environment.DIRECTORY_PICTURES}/$album"
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, name)
             put(MediaStore.Images.Media.MIME_TYPE, "image/png")
@@ -93,9 +115,15 @@ object SnapshotSaver {
      * The app's own external directory needs no permission; the file lands outside
      * the gallery, so the path is reported in full for the user to find it.
      */
-    private fun saveToAppStorage(context: Context, bitmap: Bitmap, name: String): Result {
-        val dir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+    private fun saveToAppStorage(
+        context: Context,
+        bitmap: Bitmap,
+        name: String,
+        subfolder: String?,
+    ): Result {
+        val pictures = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
             ?: throw IllegalStateException("no external storage available")
+        val dir = if (subfolder == null) pictures else File(pictures, subfolder)
         dir.mkdirs()
         val file = File(dir, name)
         FileOutputStream(file).use { out ->

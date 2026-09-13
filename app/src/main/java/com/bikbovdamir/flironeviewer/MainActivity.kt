@@ -49,6 +49,7 @@ import android.widget.Space
 import android.widget.TextView
 import android.widget.Toast
 import android.window.OnBackInvokedDispatcher
+import java.util.Date
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
@@ -1455,9 +1456,14 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     /**
      * Captures the frame currently on screen and writes it to the gallery.
      *
-     * The frame is grabbed synchronously so the file matches what the user was
-     * looking at when they pressed the button, but the encode and the write go to a
-     * background thread - PNG compression on the UI thread would stutter the live
+     * Two files under one name: the card a person can read, and the sensor's own
+     * pixels behind it. See [SnapshotCard] for why a bare thermal image is not worth
+     * keeping on its own.
+     *
+     * Everything that touches a bitmap happens here, synchronously, so the files match
+     * what the user was looking at when they pressed the button and so the compositor's
+     * reused buffer is never read from another thread. Only the PNG encoding and the
+     * write go to the background - compressing on the UI thread would stutter the live
      * view at the exact moment the user is holding the camera still.
      */
     private fun saveSnapshot() {
@@ -1467,17 +1473,42 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
             return
         }
         flash()
-        // Save what is on screen: if the visible layer is mixed in, the file gets it
-        // too. A separate compositor because the live one is being written by the
-        // camera thread; it only has to carry the same alignment.
+        val takenAt = Date()
+        val name = SnapshotSaver.nameFor(takenAt)
+
+        // A separate compositor because the live one is being written by the camera
+        // thread; it only has to carry the same alignment.
         val thermal = renderer.snapshot(frame)
         snapshotCompositor.fovRatio = compositor.fovRatio
         snapshotCompositor.parallax = compositor.parallax
         val composed = snapshotCompositor.compose(frame, thermal, blendMode) ?: thermal
-        val bitmap = ViewTransform.orient(composed, rotation, mirrored)
+
+        val card = SnapshotCard.render(
+            this,
+            CardScene(
+                picture = composed,
+                rotation = rotation,
+                mirrored = mirrored,
+                spots = spotLabels(frame),
+                palette = renderer.palette,
+                window = currentWindow(),
+                planck = planck,
+                geometry = geometry,
+                blend = blendMode,
+                rangeFixed = rangeFixed,
+                takenAt = takenAt,
+            ),
+        )
+        // The thermal layer alone, not the composed one: the original is there to be
+        // measured from later, and a visible-light mix is a picture, not a measurement.
+        // The card already carries the mix, at a size worth looking at.
+        val original = ViewTransform.orient(thermal, rotation, mirrored)
+
         thread(name = "flir-save") {
             val message = try {
-                getString(R.string.saved_to, SnapshotSaver.save(this, bitmap).displayPath)
+                val saved = SnapshotSaver.save(this, card, name)
+                SnapshotSaver.saveRaw(this, original, name)
+                getString(R.string.saved_to, saved.displayPath)
             } catch (e: Exception) {
                 Log.e(TAG, "snapshot save failed", e)
                 getString(R.string.save_failed, e.message ?: e.javaClass.simpleName)

@@ -25,7 +25,6 @@ import android.graphics.Shader
 import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.View
-import kotlin.math.ceil
 
 /**
  * The colour scale under the picture: the palette as a strip, with the temperatures
@@ -35,11 +34,8 @@ import kotlin.math.ceil
  * 30 C or 300 C, and the two would look identical whenever auto-gain had rescaled
  * itself between glances.
  *
- * The ticks are placed by count, not by degree. The palette is stretched linearly over
- * raw sensor counts, and the count-to-degree conversion is the Planck equation, which
- * is not linear - so a scale drawn with evenly spaced degree labels would put every
- * label slightly in the wrong place. Spacing comes out a little uneven instead, which
- * is the honest picture of what the colours are doing.
+ * Where the ticks fall is [ScaleTicks]' business, shared with the scale drawn into a
+ * saved card.
  */
 class ScaleBarView @JvmOverloads constructor(
     context: Context,
@@ -95,29 +91,13 @@ class ScaleBarView @JvmOverloads constructor(
         canvas.drawRoundRect(barRect, radius, radius, barBorder)
 
         val calibration = planck ?: return
-        val loC = calibration.rawToCelsius(rawLo.toInt())
-        val hiC = calibration.rawToCelsius(rawHi.toInt())
-        if (loC.isNaN() || hiC.isNaN() || hiC <= loC) return
-
-        // At most five labels, whatever the span: more than that and they collide on a
-        // phone-width strip.
-        val step = STEPS.firstOrNull { (hiC - loC) / it <= 5 } ?: STEPS.last()
-        var value = ceil(loC / step).toInt() * step
-        val span = (rawHi - rawLo).takeIf { it > 0f } ?: return
-        while (value < hiC) {
-            val raw = calibration.celsiusToRaw(value.toDouble())
-            val fraction = ((raw - rawLo) / span).toFloat()
-            // Skipped near the ends, where a label would sit under the MIN/MAX figures
-            // that already say the same thing.
-            if (fraction > 0.09f && fraction < 0.91f) {
-                val x = fraction * width
-                canvas.drawRect(x, barHeight + 2f * density, x + 1f, barHeight + 6f * density, tickPaint)
-                val text = value.toString()
-                val textWidth = labelPaint.measureText(text)
-                val left = (x - textWidth / 2f).coerceIn(0f, width - textWidth)
-                canvas.drawText(text, left, barHeight + 17f * density, labelPaint)
-            }
-            value += step
+        ScaleTicks.forEach(calibration, rawLo, rawHi) { fraction, degrees ->
+            val x = fraction * width
+            canvas.drawRect(x, barHeight + 2f * density, x + 1f, barHeight + 6f * density, tickPaint)
+            val text = degrees.toString()
+            val textWidth = labelPaint.measureText(text)
+            val left = (x - textWidth / 2f).coerceIn(0f, width - textWidth)
+            canvas.drawText(text, left, barHeight + 17f * density, labelPaint)
         }
     }
 
@@ -125,8 +105,5 @@ class ScaleBarView @JvmOverloads constructor(
         const val STOPS = 33
         const val MUTED = 0xFFA69A85.toInt()
         const val BORDER = 0xFF453A2C.toInt()
-
-        /** Label spacings worth using, in whole degrees. */
-        val STEPS = listOf(1, 2, 5, 10, 20, 50)
     }
 }

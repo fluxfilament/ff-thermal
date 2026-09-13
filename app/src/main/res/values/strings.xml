@@ -133,6 +133,18 @@
     <string name="stat_scene_range">%1$s…%2$s</string>
 
     <!-- snapshots -->
+    <!-- The blend modes as a card spells them out. The live screen can label the
+         button "ИК" because a lit-up icon sits beside it and the picture is right
+         there; a card is read on its own, months later, by someone who was not
+         holding the camera. -->
+    <string name="card_blend_thermal">ТОЛЬКО ИК</string>
+    <string name="card_blend_mix35">ИК + ВИД 35 %</string>
+    <string name="card_blend_mix60">ИК + ВИД 60 %</string>
+    <string name="card_blend_visible">ТОЛЬКО ВИД</string>
+    <!-- On a card, beside the palette: the colours are pinned to a window the user
+         set, not to the scene. Without it the same colour means something different
+         in every picture. -->
+    <string name="card_range_fixed">ФИКС</string>
     <string name="saved_to">Снимок сохранён · %1$s</string>
     <string name="save_failed">Не удалось сохранить: %1$s</string>
     <string name="nothing_to_save">Кадра ещё нет</string>

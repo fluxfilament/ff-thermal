@@ -19,7 +19,6 @@ package com.bikbovdamir.flironeviewer
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RectF
@@ -83,41 +82,7 @@ class ThermalView @JvmOverloads constructor(
         // a wrong de-interleave has to stay visible as hard banding.
         isFilterBitmap = false
     }
-    private val markerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeWidth = 2f * density
-        color = Color.WHITE
-    }
-    private val markerShadow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeWidth = 4f * density
-        color = Color.argb(160, 0, 0, 0)
-    }
-    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
-        textSize = 13f * density
-        isFakeBoldText = true
-    }
-    private val textShadow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeWidth = 3f * density
-        color = Color.argb(200, 0, 0, 0)
-        textSize = 13f * density
-        isFakeBoldText = true
-    }
-
-    private val numberPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
-        textSize = 11f * density
-        isFakeBoldText = true
-    }
-    private val numberShadow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeWidth = 3f * density
-        color = Color.argb(200, 0, 0, 0)
-        textSize = 11f * density
-        isFakeBoldText = true
-    }
+    private val glyphs = SpotGlyphs(density)
 
     private var dragging = -1
 
@@ -150,44 +115,13 @@ class ThermalView @JvmOverloads constructor(
         matrix.mapPoints(point)
         val x = point[0]
         val y = point[1]
-        val r = 7f * density
 
-        for (paint in arrayOf(markerShadow, markerPaint)) {
-            canvas.drawCircle(x, y, r, paint)
-            canvas.drawLine(x - r * 1.7f, y, x - r * 0.5f, y, paint)
-            canvas.drawLine(x + r * 0.5f, y, x + r * 1.7f, y, paint)
-            canvas.drawLine(x, y - r * 1.7f, x, y - r * 0.5f, paint)
-            canvas.drawLine(x, y + r * 0.5f, x, y + r * 1.7f, paint)
-        }
+        glyphs.drawMarker(canvas, x, y)
 
-        // Only the labels turn, not the crosshair: a ring with four ticks at right
-        // angles looks the same whichever way up it is, so turning it would cost a
-        // save/restore to change nothing.
         canvas.save()
         canvas.rotate(-labelRotation.toFloat(), x, y)
         boundsInLabelFrame(x, y, labelBounds)
-
-        // The reading gets the prime spot beside the crosshair, where the eye lands.
-        // The number is only there to tell one spot from another, so it goes up and
-        // to the left, out of the way of the figure that is actually being read.
-        // "Beside" and "up" mean from the reader's side, which is why the edges below
-        // are the view's edges as seen in this turned frame rather than the window's.
-        val reading = spot.text
-        val readingWidth = textPaint.measureText(reading)
-        val left = if (x + r * 2f + readingWidth < labelBounds.right) x + r * 2f
-        else x - r * 2f - readingWidth
-        val baseline = (y + 5f * density).coerceIn(
-            labelBounds.top + textPaint.textSize,
-            labelBounds.bottom - 4f * density,
-        )
-        drawLabel(canvas, reading, left, baseline, textPaint, textShadow)
-
-        val number = spot.number.toString()
-        val numberWidth = numberPaint.measureText(number)
-        val numberX = (x - r * 1.5f - numberWidth)
-            .coerceIn(labelBounds.left, labelBounds.right - numberWidth)
-        val numberY = (y - r * 1.5f).coerceAtLeast(labelBounds.top + numberPaint.textSize)
-        drawLabel(canvas, number, numberX, numberY, numberPaint, numberShadow)
+        glyphs.drawLabels(canvas, x, y, spot.number, spot.text, labelBounds)
         canvas.restore()
     }
 
@@ -204,12 +138,6 @@ class ThermalView @JvmOverloads constructor(
         if (labelRotation == 0) return
         labelMatrix.setRotate(labelRotation.toFloat(), x, y)
         labelMatrix.mapRect(into)
-    }
-
-    /** Outline first, then the glyphs: legible over a light scene as well as a dark one. */
-    private fun drawLabel(canvas: Canvas, text: String, x: Float, y: Float, fill: Paint, outline: Paint) {
-        canvas.drawText(text, x, y, outline)
-        canvas.drawText(text, x, y, fill)
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
