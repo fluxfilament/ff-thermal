@@ -423,7 +423,11 @@ class CalibrationScreen(
         const val PREF_OFFSET = "correction_offset"
         const val PREF_AT = "correction_at"
         const val PREF_SOURCE = "correction_source"
-        const val PREF_POINTS = "calibration_points"
+        /**
+         * v2 since the IR window went into [Planck] (2026-10-04): points measured
+         * before it carry the old, compressed readings and would fit a wrong slope.
+         */
+        const val PREF_POINTS = "calibration_points_v2"
 
         private const val EMPTY = "—"
     }

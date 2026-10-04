@@ -62,6 +62,28 @@ data class Planck(
     /** Apparent temperature of whatever the target is reflecting, in Kelvin. */
     val reflectedTemperature: Double = 295.15,
     /**
+     * The protective window in front of the lens: it passes this fraction of what
+     * the scene radiates and adds radiation of its own at [irWindowTemperature].
+     *
+     * Left out of the equation until 2026-10-04, and that was the whole of the
+     * "compressed scale": melting ice read 5.7 C and boiling water 83.7 C, both
+     * pulled toward the room. The official app showed -0.6 and 99.2 on the same
+     * cups, and the full model below reproduces its figures from the raw image in
+     * its own JPEGs to within 0.4 C (-18.05 / -0.77 / 99.57 against -18.0 / -0.6 /
+     * 99.2, one of them at emissivity 0.60). Both values are in every FLIR ONE JPEG
+     * (CameraInfo 0x30 and 0x34).
+     */
+    val irWindowTransmission: Double = 0.80,
+    val irWindowTemperature: Double = 298.15,
+    /** Air between the camera and the target, in Kelvin; the JPEG's default. */
+    val atmosphericTemperature: Double = 293.15,
+    /**
+     * Transmission of each half of the path through that air. FLIR's own model, at
+     * the defaults its app writes - 1 m, 50 % humidity, 20 C - gives 0.9957; the app
+     * has no distance setting, so the default is what it actually uses too.
+     */
+    val atmosphericTransmission: Double = 0.9957,
+    /**
      * The user's correction from the calibration screen, applied to the result in
      * both directions so that every reading, the scale and a fixed window agree.
      */
@@ -79,13 +101,33 @@ data class Planck(
      */
     private val usbScale = 4
 
-    /** Radiance the target reflects from its surroundings, in raw counts. */
-    private val reflectedRaw: Double =
-        r1 / (r2 * (exp(b / reflectedTemperature) - f)) - o
+    /** Radiance of a black body at [kelvin], in raw counts. */
+    private fun blackBodyRaw(kelvin: Double): Double = r1 / (r2 * (exp(b / kelvin) - f)) - o
+
+    /**
+     * FLIR's model of what reaches the sensor, as in exiftool's and Thermimage's
+     * raw2temp: the target, attenuated by its emissivity, the air, the window and
+     * the air again, plus what the reflection, the air and the window add on the
+     * way. It is linear in the target's radiance, so it comes down to one gain and
+     * one sum of stray terms, worked out once per set of parameters.
+     */
+    private val pathGain: Double =
+        emissivity * atmosphericTransmission * irWindowTransmission * atmosphericTransmission
+
+    private val strayRaw: Double = run {
+        val e = emissivity
+        val t = atmosphericTransmission
+        val w = irWindowTransmission
+        val air = blackBodyRaw(atmosphericTemperature)
+        (1 - e) / e * blackBodyRaw(reflectedTemperature) +
+            (1 - t) / (e * t) * air +
+            (1 - w) / (e * t * w) * blackBodyRaw(irWindowTemperature) +
+            (1 - t) / (e * t * w * t) * air
+    }
 
     fun rawToCelsius(raw: Int): Double {
         val scaled = raw.toDouble() * usbScale
-        val objectRaw = (scaled - (1 - emissivity) * reflectedRaw) / emissivity
+        val objectRaw = scaled / pathGain - strayRaw
         val ratio = r1 / (r2 * (objectRaw + o)) + f
         if (ratio <= 0) return Double.NaN
         return correction.apply(b / ln(ratio) - 273.15)
@@ -105,7 +147,7 @@ data class Planck(
         val ratio = exp(b / kelvin)
         if (ratio <= f) return Double.NaN
         val objectRaw = r1 / (r2 * (ratio - f)) - o
-        val scaled = objectRaw * emissivity + (1 - emissivity) * reflectedRaw
+        val scaled = (objectRaw + strayRaw) * pathGain
         return scaled / usbScale
     }
 
