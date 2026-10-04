@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 bikbov-damir
+ * Copyright (C) 2026 Damirusnik
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package com.bikbovdamir.flironeviewer
+package com.fluxfilament.thermalcam
 
 import android.content.ContentValues
 import android.content.Context

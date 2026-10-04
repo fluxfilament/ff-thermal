@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace = "com.bikbovdamir.flironeviewer"
+    namespace = "com.fluxfilament.thermalcam"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.bikbovdamir.flironeviewer"
+        applicationId = "com.fluxfilament.thermalcam"
         minSdk = 26
         targetSdk = 37
         versionCode = 1

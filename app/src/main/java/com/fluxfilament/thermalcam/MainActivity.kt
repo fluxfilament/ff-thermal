@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 bikbov-damir
+ * Copyright (C) 2026 Damirusnik
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package com.bikbovdamir.flironeviewer
+package com.fluxfilament.thermalcam
 
 import android.app.Activity
 import android.app.PendingIntent
@@ -88,7 +88,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
 
     private companion object {
         const val TAG = "FlirOneViewer"
-        const val ACTION_USB_PERMISSION = "com.bikbovdamir.flironeviewer.USB_PERMISSION"
+        const val ACTION_USB_PERMISSION = "com.fluxfilament.thermalcam.USB_PERMISSION"
         const val MAX_LOG_LINES = 400
         const val PREFS = "flir-one-viewer"
         const val PREF_EMISSIVITY = "emissivity"

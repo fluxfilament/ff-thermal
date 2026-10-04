@@ -95,7 +95,7 @@
         android:layout_weight="1"
         android:background="@color/ff_well">
 
-        <com.bikbovdamir.flironeviewer.ThermalView
+        <com.fluxfilament.thermalcam.ThermalView
             android:id="@+id/thermalView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -121,7 +121,7 @@
         android:paddingEnd="16dp"
         android:paddingBottom="8dp">
 
-        <com.bikbovdamir.flironeviewer.ScaleBarView
+        <com.fluxfilament.thermalcam.ScaleBarView
             android:id="@+id/scaleBar"
             android:layout_width="match_parent"
             android:layout_height="36dp" />

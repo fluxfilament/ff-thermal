@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 bikbov-damir
+ * Copyright (C) 2026 Damirusnik
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
  *     2024 additions by Mitchell (Miso98), GPL-2.0-or-later
  * See NOTICE for full attribution.
  */
-package com.bikbovdamir.flironeviewer
+package com.fluxfilament.thermalcam
 
 /** Wire-format constants and pure decoding helpers. No Android dependencies. */
 object FlirProtocol {

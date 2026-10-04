@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 bikbov-damir
+ * Copyright (C) 2026 Damirusnik
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
  * plank.h (C) 2015-2016 Thomas <tomas123@EEVblog>, GPL-2.0-or-later.
  * See NOTICE.
  */
-package com.bikbovdamir.flironeviewer
+package com.fluxfilament.thermalcam
 
 import kotlin.math.exp
 import kotlin.math.ln
