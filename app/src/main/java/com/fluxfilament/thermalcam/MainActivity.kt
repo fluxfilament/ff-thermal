@@ -405,7 +405,8 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         spotMeter.mirrored = mirrored
         spotMeter.setCount(prefs.getInt(PREF_SPOTS, 1))
 
-        calibration = CalibrationScreen(this, prefs, { planck }, ::applyCorrection)
+        calibration = CalibrationScreen(this, prefs, { planck }, ::applyCorrection, ::applyConstants)
+        calibration.savedConstants()?.let { planck = it.applyTo(planck) }
         planck = planck.copy(correction = calibration.savedCorrection())
         calibration.refreshAll()
 
@@ -969,6 +970,22 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         refreshLegend()
         refreshEmissivityScreen()
         refreshSummaries()
+    }
+
+    /** New constants move what every count means in degrees, as a correction does. */
+    private fun applyConstants(constants: CameraConstants) {
+        planck = constants.applyTo(planck)
+        applyRange()
+        refreshLegend()
+        refreshSummaries()
+    }
+
+    @Deprecated("Activity has no result API of its own; this is still the way for it")
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (!calibration.onActivityResult(requestCode, resultCode, data)) {
+            super.onActivityResult(requestCode, resultCode, data)
+        }
     }
 
     /** A correction moves what every count means in degrees, just as emissivity does. */

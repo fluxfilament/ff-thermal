@@ -117,6 +117,18 @@
     <!-- calibration screen -->
     <string name="calibration_title">Калибровка</string>
     <string name="unit_celsius">°C</string>
+    <string name="consts_section">Константы камеры</string>
+    <string name="consts_built_in_status">Встроенные — экземпляр, на котором разрабатывалось приложение</string>
+    <string name="consts_imported_status">Из снимка %1$s · %2$s</string>
+    <string name="consts_values">R1 %1$s · B %2$s · F %3$s\nO %4$s · R2 %5$s\nокно %6$s при %7$s °C · воздух %8$s °C</string>
+    <string name="consts_note">У каждого экземпляра FLIR ONE свои константы: на чужих показания уходят на градусы. Если камера не та, на которой разрабатывалось приложение, сохраните любой кадр официальным приложением FLIR ONE и выберите его здесь.</string>
+    <string name="consts_import">Из снимка FLIR</string>
+    <string name="consts_built_in">Встроенные</string>
+    <string name="consts_msg_same">Константы в снимке совпадают с текущими — ничего не менялось.</string>
+    <string name="consts_msg_applied">Константы загружены. Поправка и замеры сброшены: они сняты с прежними константами.</string>
+    <string name="consts_msg_applied_clean">Константы загружены.</string>
+    <string name="consts_msg_not_flir">В этом файле нет радиометрических данных FLIR. Нужен JPEG, сохранённый официальным приложением FLIR ONE, без пересжатия и редактирования.</string>
+    <string name="consts_msg_read_failed">Не удалось прочитать файл: %1$s</string>
     <string name="calib_section_correction">Поправка показаний</string>
     <string name="calib_none">Нет</string>
     <string name="calib_summary_none">нет поправки</string>

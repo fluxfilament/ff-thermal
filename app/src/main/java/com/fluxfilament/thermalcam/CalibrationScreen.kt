@@ -17,6 +17,7 @@
 package com.fluxfilament.thermalcam
 
 import android.app.Activity
+import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.RectF
@@ -45,6 +46,7 @@ class CalibrationScreen(
     /** The current conversion, correction included. */
     private val planck: () -> Planck,
     private val onCorrection: (Correction) -> Unit,
+    private val onConstants: (CameraConstants) -> Unit,
 ) {
     private val ru: Locale = Locale.forLanguageTag("ru")
 
@@ -59,6 +61,9 @@ class CalibrationScreen(
     private val measureButton: TextView = activity.findViewById(R.id.calibMeasure)
     private val pointsList: LinearLayout = activity.findViewById(R.id.calibPoints)
     private val message: TextView = activity.findViewById(R.id.calibMessage)
+    private val constsStatus: TextView = activity.findViewById(R.id.constsStatus)
+    private val constsValues: TextView = activity.findViewById(R.id.constsValues)
+    private val constsMessage: TextView = activity.findViewById(R.id.constsMessage)
 
     private var reference = ReferenceKind.ICE
     private val points = mutableListOf<ReferencePoint>()
@@ -70,11 +75,17 @@ class CalibrationScreen(
     private var lastFrameAt = 0L
 
     init {
+        // Points from before the IR window went into Planck, under their old key.
+        prefs.edit().remove("calibration_points").apply()
         preview.zone = ZONE
         loadPoints()
         measureButton.setOnClickListener { startMeasuring() }
         activity.findViewById<View>(R.id.calibApply).setOnClickListener { apply() }
         activity.findViewById<View>(R.id.calibReset).setOnClickListener { reset() }
+        activity.findViewById<View>(R.id.constsImport).setOnClickListener { pickJpeg() }
+        activity.findViewById<View>(R.id.constsBuiltIn).setOnClickListener {
+            useConstants(CameraConstants.BUILT_IN, imported = false)
+        }
         buildReferenceOptions()
         refreshAll()
     }
@@ -85,7 +96,12 @@ class CalibrationScreen(
         offset = prefs.getFloat(PREF_OFFSET, 0f).toDouble(),
     ).let { if (it.gain == 1.0 && it.offset == 0.0) Correction.NONE else it }
 
+    /** Constants imported last time, or null for the built-in ones. */
+    fun savedConstants(): CameraConstants? =
+        prefs.getString(PREF_CONSTANTS, null)?.let { CameraConstants.deserialize(it) }
+
     fun refreshAll() {
+        refreshConstants()
         refreshStatus()
         refreshReference()
         refreshPoints()
@@ -224,6 +240,113 @@ class CalibrationScreen(
 
     private fun sourceLabel(): String =
         points.sortedBy { it.reference }.joinToString(" + ") { kindLabel(it) }
+
+    // --- camera constants ---------------------------------------------------------
+
+    /**
+     * The system file picker rather than a storage permission: the user points at
+     * one JPEG, and the app never sees anything else on the phone.
+     */
+    private fun pickJpeg() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+            .addCategory(Intent.CATEGORY_OPENABLE)
+            .setType("image/jpeg")
+        activity.startActivityForResult(intent, REQUEST_JPEG)
+    }
+
+    /** True when the result was this screen's. */
+    fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
+        if (requestCode != REQUEST_JPEG) return false
+        val uri = data?.data
+        if (resultCode != Activity.RESULT_OK || uri == null) return true
+        // A FLIR JPEG is 1.5-2 MB; reading it is not a job for the UI thread.
+        kotlin.concurrent.thread(name = "flir-fff") {
+            val outcome = try {
+                val bytes = activity.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    ?: throw java.io.IOException("empty")
+                Result.success(FffReader.read(bytes))
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+            activity.runOnUiThread {
+                outcome.fold(
+                    onSuccess = { useConstants(it, imported = true) },
+                    onFailure = { e ->
+                        showConstantsMessage(
+                            if (e is FffReader.NotFlir) activity.getString(R.string.consts_msg_not_flir)
+                            else activity.getString(R.string.consts_msg_read_failed, e.message ?: e.javaClass.simpleName),
+                        )
+                    },
+                )
+            }
+        }
+        return true
+    }
+
+    private fun useConstants(constants: CameraConstants, imported: Boolean) {
+        val current = planck()
+        val same = constants.sameAs(CameraConstants.of(current))
+        if (imported) {
+            prefs.edit()
+                .putString(PREF_CONSTANTS, constants.serialize())
+                .putLong(PREF_CONSTANTS_AT, System.currentTimeMillis())
+                .apply()
+        } else {
+            prefs.edit().remove(PREF_CONSTANTS).remove(PREF_CONSTANTS_AT).apply()
+        }
+        if (same) {
+            if (imported) showConstantsMessage(activity.getString(R.string.consts_msg_same))
+            refreshConstants()
+            return
+        }
+        onConstants(constants)
+        // A correction and its points were measured through the old constants; on the
+        // new ones they describe a camera that is no longer the one being read.
+        val hadCalibration = !planck().correction.isIdentity || points.isNotEmpty()
+        if (hadCalibration) {
+            points.clear()
+            savePoints()
+            save(Correction.NONE)
+            message.text = ""
+        }
+        showConstantsMessage(
+            activity.getString(
+                if (hadCalibration) R.string.consts_msg_applied else R.string.consts_msg_applied_clean,
+            ),
+        )
+        refreshAll()
+    }
+
+    private fun showConstantsMessage(text: String) {
+        constsMessage.text = text
+        constsMessage.visibility = View.VISIBLE
+    }
+
+    private fun refreshConstants() {
+        val p = planck()
+        val saved = savedConstants()
+        constsStatus.text = if (saved == null) {
+            activity.getString(R.string.consts_built_in_status)
+        } else {
+            val at = prefs.getLong(PREF_CONSTANTS_AT, 0L)
+            activity.getString(
+                R.string.consts_imported_status,
+                saved.model.ifEmpty { "FLIR" },
+                if (at == 0L) EMPTY else DateFormat.getDateInstance(DateFormat.MEDIUM, ru).format(Date(at)),
+            )
+        }
+        constsValues.text = activity.getString(
+            R.string.consts_values,
+            String.format(ru, "%.3f", p.r1),
+            String.format(ru, "%.1f", p.b),
+            String.format(ru, "%.3f", p.f),
+            String.format(ru, "%.0f", p.o).replace('-', '−'),
+            String.format(ru, "%.5f", p.r2),
+            String.format(ru, "%.2f", p.irWindowTransmission),
+            fmt(p.irWindowTemperature - 273.15),
+            fmt(p.atmosphericTemperature - 273.15),
+        )
+    }
 
     // --- views --------------------------------------------------------------------
 
@@ -418,6 +541,10 @@ class CalibrationScreen(
         const val MAX_SPREAD = 1.0
 
         const val LIVE_TIMEOUT_MS = 1500L
+
+        const val PREF_CONSTANTS = "camera_constants"
+        const val PREF_CONSTANTS_AT = "camera_constants_at"
+        const val REQUEST_JPEG = 41
 
         const val PREF_GAIN = "correction_gain"
         const val PREF_OFFSET = "correction_offset"
