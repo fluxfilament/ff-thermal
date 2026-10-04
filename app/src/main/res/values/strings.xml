@@ -35,7 +35,6 @@
     <string name="shutter_description">Сохранить снимок</string>
     <string name="spot_minus_description">Убрать точку замера</string>
     <string name="spot_plus_description">Добавить точку замера</string>
-    <string name="spots_label">ТОЧЕК</string>
 
     <!-- blend modes, as they appear under the tool icon -->
     <string name="blend_thermal">ИК</string>

@@ -95,6 +95,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         const val PREF_FOV_RATIO = "fovRatio"
         const val PREF_PARALLAX = "parallax"
         const val PREF_ROTATION = "rotation"
+        const val INTERFACE_TURN_MS = 250L
         const val PREF_SPOTS = "spots"
         const val PREF_MIRRORED = "mirrored"
         const val PREF_RANGE_FIXED = "rangeFixed"
@@ -289,12 +290,30 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
      * How far the phone itself is turned, in degrees clockwise from upright.
      *
      * The window is locked to portrait so that it cannot fight the camera bolted to
-     * it, which means turning the phone turns everything drawn in it - the spot
-     * readings included - and leaves them sideways to the person reading them. The
+     * it (the half turn in [windowTurn] happens inside it), which means turning the phone
+     * sideways turns everything drawn in it - the spot readings included - and
+     * leaves them sideways to the person reading them. The
      * accelerometer is the only thing left that still knows which way is up, and it
      * is used for this and nothing else: the picture stays where the camera put it.
      */
     private var deviceRotation = 0
+
+    /**
+     * How far the interface is turned inside the window: 0, or 180 when the phone is
+     * upside down.
+     *
+     * Only the half turn, so the panels and the scale stay readable either way up;
+     * a quarter turn would have to relay out a portrait screen sideways. It is done
+     * by turning the root view rather than asking for reversePortrait: Samsung never
+     * gives an app the upside-down rotation (mAllowAllRotations=false - the sensor
+     * proposes ROTATION_180 and the window stays at 0), so the system route did
+     * nothing on the phone this is built on. A turned interface drags the picture
+     * along with it, against a scene that never moved, so the picture is turned back
+     * by the same amount: [viewRotation] is what it is actually drawn with.
+     */
+    private var windowTurn = 0
+
+    private val viewRotation: Int get() = (rotation + windowTurn) % 360
 
     private val orientationListener by lazy {
         object : OrientationEventListener(this) {
@@ -304,7 +323,12 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
                 val snapped = snapRotation(degrees, deviceRotation)
                 if (snapped == deviceRotation) return
                 deviceRotation = snapped
-                thermalView.labelRotation = snapped
+                // Sideways keeps whichever way up the interface already was.
+                when (snapped) {
+                    0 -> turnInterface(0)
+                    180 -> turnInterface(180)
+                }
+                updateLabelRotation()
             }
         }
     }
@@ -506,8 +530,8 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
      */
     private fun setUpInsets() {
         root.setOnApplyWindowInsetsListener { _, insets ->
-            val top: Int
-            val bottom: Int
+            var top: Int
+            var bottom: Int
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 val bars = insets.getInsets(
                     WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()
@@ -519,6 +543,11 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
                 top = insets.systemWindowInsetTop
                 @Suppress("DEPRECATION")
                 bottom = insets.systemWindowInsetBottom
+            }
+            if (windowTurn == 180) {
+                val physicalTop = top
+                top = bottom
+                bottom = physicalTop
             }
             for (header in listOf(
                 topBar, settingsHeader, emissivityHeader, fovHeader, calibrationHeader, logHeader,
@@ -1276,7 +1305,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         val placement = visible?.let {
             previewCompositor.visibleMatrix(it, thermal.width, thermal.height)
         }
-        splitPreview.show(thermal, visible, placement, rotation, mirrored)
+        splitPreview.show(thermal, visible, placement, viewRotation, mirrored)
         thumbThermal.setImageBitmap(thermal)
         thumbVisible.setImageBitmap(visible)
         placeCropRect()
@@ -1326,6 +1355,20 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     override fun onPause() {
         super.onPause()
         orientationListener.disable()
+    }
+
+    private fun turnInterface(turn: Int) {
+        if (turn == windowTurn) return
+        windowTurn = turn
+        root.animate().rotation(turn.toFloat()).setDuration(INTERFACE_TURN_MS).start()
+        // The system bars stay where they are, so the paddings that clear them
+        // have to swap ends along with the interface.
+        root.requestApplyInsets()
+    }
+
+    /** The spot labels have to cancel the phone's turn less whatever the window already did. */
+    private fun updateLabelRotation() {
+        thermalView.labelRotation = (deviceRotation - windowTurn + 360) % 360
     }
 
     override fun onDestroy() {
@@ -1406,7 +1449,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
             runOnUiThread {
                 repaintPending.set(false)
                 thermalView.spots = labels
-                thermalView.setImage(bitmap, rotation, mirrored)
+                thermalView.setImage(bitmap, viewRotation, mirrored)
                 if (screen == Screen.FOV) updateFovPreview(thermal)
             }
         }
@@ -1487,7 +1530,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
             this,
             CardScene(
                 picture = composed,
-                rotation = rotation,
+                rotation = viewRotation,
                 mirrored = mirrored,
                 spots = spotLabels(frame),
                 palette = renderer.palette,
@@ -1502,7 +1545,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         // The thermal layer alone, not the composed one: the original is there to be
         // measured from later, and a visible-light mix is a picture, not a measurement.
         // The card already carries the mix, at a size worth looking at.
-        val original = ViewTransform.orient(thermal, rotation, mirrored)
+        val original = ViewTransform.orient(thermal, viewRotation, mirrored)
 
         thread(name = "flir-save") {
             val message = try {

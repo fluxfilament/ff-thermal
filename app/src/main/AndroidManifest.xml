@@ -17,9 +17,13 @@
             screenOrientation: the camera is bolted to the phone, so turning the phone
             turns the scene with it and the picture is already where it belongs. A
             window that turned too would move the picture a second time, against a
-            scene that never moved. The picture's own rotation is a setting instead,
-            and the accelerometer is read for exactly one thing: keeping the spot
-            readings upright for whoever is holding it.
+            scene that never moved. The upside-down case is handled inside the window
+            instead (MainActivity turns the interface and turns the picture back):
+            Samsung does not give apps reversePortrait, so sensorPortrait does
+            nothing there. The
+            picture's own rotation is a setting, and the accelerometer is read for
+            exactly one thing: keeping the spot readings upright for whoever is
+            holding it.
         -->
         <activity
             android:name=".MainActivity"

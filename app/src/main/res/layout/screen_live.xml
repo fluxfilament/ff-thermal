@@ -253,64 +253,71 @@
         android:paddingStart="16dp"
         android:paddingEnd="16dp">
 
+        <!-- Three columns, the outer two weighted equally: the shutter sits on the
+             screen's centre line however wide the groups either side of it are.
+             Two equal spacers around it only centred it while both groups happened
+             to be the same width, and they were not - it sat 14dp to the left. -->
         <LinearLayout
-            android:id="@+id/blendTool"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:background="@drawable/bg_tool"
-            android:clickable="true"
-            android:contentDescription="@string/blend_description"
-            android:focusable="true"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:id="@+id/blendIcon"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_blend" />
-
-            <TextView
-                android:id="@+id/blendLabel"
-                style="@style/Ff.ToolLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/mirrorTool"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:layout_marginStart="8dp"
-            android:background="@drawable/bg_tool"
-            android:clickable="true"
-            android:contentDescription="@string/mirror_description"
-            android:focusable="true"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:id="@+id/mirrorIcon"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_mirror" />
-
-            <TextView
-                android:id="@+id/mirrorLabel"
-                style="@style/Ff.ToolLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="@string/mirror_label" />
-        </LinearLayout>
-
-        <Space
             android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="start|center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/blendTool"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:background="@drawable/bg_tool"
+                android:clickable="true"
+                android:contentDescription="@string/blend_description"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/blendIcon"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_blend" />
+
+                <TextView
+                    android:id="@+id/blendLabel"
+                    style="@style/Ff.ToolLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/mirrorTool"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_tool"
+                android:clickable="true"
+                android:contentDescription="@string/mirror_description"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/mirrorIcon"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_mirror" />
+
+                <TextView
+                    android:id="@+id/mirrorLabel"
+                    style="@style/Ff.ToolLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/mirror_label" />
+            </LinearLayout>
+        </LinearLayout>
 
         <FrameLayout
             android:id="@+id/shutterButton"
@@ -329,56 +336,43 @@
                 android:background="@drawable/bg_shutter_core" />
         </FrameLayout>
 
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
-
-        <!-- Opposite actions, held apart by the number they act on: the old row had
-             them touching, with nothing between a spot added and a spot removed. -->
-        <ImageButton
-            android:id="@+id/spotMinusButton"
-            android:layout_width="48dp"
-            android:layout_height="56dp"
-            android:background="@drawable/bg_tool"
-            android:contentDescription="@string/spot_minus_description"
-            android:src="@drawable/ic_minus" />
-
         <LinearLayout
-            android:layout_width="36dp"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
-            android:gravity="center"
-            android:orientation="vertical">
+            android:layout_weight="1"
+            android:gravity="end|center_vertical"
+            android:orientation="horizontal">
+
+            <!-- Opposite actions, held apart by the number they act on: the old row
+                 had them touching, with nothing between a spot added and a spot
+                 removed. 48 + 24 + 48 adds up to the 120dp of the tools on the left,
+                 so the shutter has the same clearance on both sides; the count is a
+                 single digit and needs no caption. -->
+            <ImageButton
+                android:id="@+id/spotMinusButton"
+                android:layout_width="48dp"
+                android:layout_height="56dp"
+                android:background="@drawable/bg_tool"
+                android:contentDescription="@string/spot_minus_description"
+                android:src="@drawable/ic_minus" />
 
             <TextView
                 android:id="@+id/spotCountValue"
                 style="@style/Ff.Mono"
-                android:layout_width="wrap_content"
+                android:layout_width="24dp"
                 android:layout_height="wrap_content"
+                android:gravity="center"
                 android:includeFontPadding="false"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
-            <TextView
-                style="@style/Ff.Mono"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
-                android:includeFontPadding="false"
-                android:letterSpacing="0.06"
-                android:text="@string/spots_label"
-                android:textColor="@color/ff_muted"
-                android:textSize="9.5sp" />
+            <ImageButton
+                android:id="@+id/spotPlusButton"
+                android:layout_width="48dp"
+                android:layout_height="56dp"
+                android:background="@drawable/bg_tool"
+                android:contentDescription="@string/spot_plus_description"
+                android:src="@drawable/ic_plus" />
         </LinearLayout>
-
-        <ImageButton
-            android:id="@+id/spotPlusButton"
-            android:layout_width="48dp"
-            android:layout_height="56dp"
-            android:background="@drawable/bg_tool"
-            android:contentDescription="@string/spot_plus_description"
-            android:src="@drawable/ic_plus" />
     </LinearLayout>
 </LinearLayout>
