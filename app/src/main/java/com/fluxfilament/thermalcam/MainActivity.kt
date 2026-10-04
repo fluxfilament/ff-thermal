@@ -350,6 +350,9 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     @Volatile
     private var planck = Planck.DEVELOPMENT_UNIT
 
+    private lateinit var calibration: CalibrationScreen
+    private lateinit var calibrationSummary: TextView
+
     private val logLines = ArrayDeque<String>()
     private val repaintPending = AtomicBoolean(false)
 
@@ -401,6 +404,10 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         spotMeter.rotation = rotation
         spotMeter.mirrored = mirrored
         spotMeter.setCount(prefs.getInt(PREF_SPOTS, 1))
+
+        calibration = CalibrationScreen(this, prefs, { planck }, ::applyCorrection)
+        planck = planck.copy(correction = calibration.savedCorrection())
+        calibration.refreshAll()
 
         setUpLiveScreen()
         setUpNavigation()
@@ -495,6 +502,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         fovSeek = findViewById(R.id.fovSeek)
 
         screenCalibration = findViewById(R.id.screenCalibration)
+        calibrationSummary = findViewById(R.id.calibrationSummary)
         calibrationHeader = findViewById(R.id.calibrationHeader)
         screenLog = findViewById(R.id.screenLog)
         logHeader = findViewById(R.id.logHeader)
@@ -611,6 +619,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
             Screen.EMISSIVITY -> refreshEmissivityScreen()
             Screen.FOV -> refreshFovScreen()
             Screen.LOG -> refreshStats()
+            Screen.CALIBRATION -> calibration.refreshAll()
             else -> Unit
         }
     }
@@ -962,6 +971,14 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         refreshSummaries()
     }
 
+    /** A correction moves what every count means in degrees, just as emissivity does. */
+    private fun applyCorrection(correction: Correction) {
+        planck = planck.copy(correction = correction)
+        applyRange()
+        refreshLegend()
+        refreshSummaries()
+    }
+
     private fun refreshEmissivityScreen() {
         val eps = planck.emissivity
         emissivityBig.text = getString(R.string.emissivity_big, dec(eps, 2))
@@ -1196,6 +1213,9 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
             nearest?.let { getString(it.nameRes).lowercase(RU) }
                 ?: getString(R.string.emissivity_custom),
         )
+        calibrationSummary.text = planck.correction.let {
+            if (it.isIdentity) getString(R.string.calib_summary_none) else it.label(RU)
+        }
         fovSummary.text = getString(R.string.fov_summary, dec(compositor.fovRatio.toDouble(), 2))
         val stats = lastStats
         logSummary.text = if (stats == null) {
@@ -1445,12 +1465,14 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
             runOnUiThread { refreshTopBar() }
         }
         val labels = spotLabels(frame)
+        val zone = if (showing == Screen.CALIBRATION) calibration.zoneCelsius(frame) else Double.NaN
         if (repaintPending.compareAndSet(false, true)) {
             runOnUiThread {
                 repaintPending.set(false)
                 thermalView.spots = labels
                 thermalView.setImage(bitmap, viewRotation, mirrored)
                 if (screen == Screen.FOV) updateFovPreview(thermal)
+                if (screen == Screen.CALIBRATION) calibration.onFrame(thermal, viewRotation, mirrored, zone)
             }
         }
     }
@@ -1460,7 +1482,10 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         calibrating = true
         // The scene changes under a closed shutter, so the old contrast window is stale.
         renderer.resetBounds()
-        runOnUiThread { refreshTopBar() }
+        runOnUiThread {
+            refreshTopBar()
+            calibration.onShutter()
+        }
     }
 
     override fun onStats(stats: FlirOneCamera.Stats) {

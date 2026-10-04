@@ -19,6 +19,7 @@ package com.fluxfilament.thermalcam
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RectF
@@ -65,6 +66,17 @@ class ThermalView @JvmOverloads constructor(
             invalidate()
         }
 
+    /**
+     * An area to outline, in fractions of the sensor frame - the zone the
+     * calibration screen averages over. Drawn through the same matrix as the
+     * picture, so it lands on the pixels it measures whatever the rotation.
+     */
+    var zone: RectF? = null
+        set(value) {
+            field = value
+            invalidate()
+        }
+
     /** Called with the spot's index and its new position in sensor coordinates. */
     var onSpotMoved: ((Int, Float, Float) -> Unit)? = null
 
@@ -83,6 +95,18 @@ class ThermalView @JvmOverloads constructor(
         isFilterBitmap = false
     }
     private val glyphs = SpotGlyphs(density)
+
+    private val zoneRect = RectF()
+    private val zonePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 2f * density
+        color = Color.WHITE
+    }
+    /** A dark rim under the white one, so the outline survives a white-hot scene. */
+    private val zoneShadow = Paint(zonePaint).apply {
+        strokeWidth = 4f * density
+        color = 0x99000000.toInt()
+    }
 
     private var dragging = -1
 
@@ -106,7 +130,18 @@ class ThermalView @JvmOverloads constructor(
             into = matrix,
         )
         canvas.drawBitmap(bmp, matrix, imagePaint)
+        zone?.let { drawZone(canvas, bmp, it) }
         for (spot in spots) drawSpot(canvas, bmp, spot)
+    }
+
+    private fun drawZone(canvas: Canvas, bmp: Bitmap, area: RectF) {
+        zoneRect.set(
+            area.left * bmp.width, area.top * bmp.height,
+            area.right * bmp.width, area.bottom * bmp.height,
+        )
+        matrix.mapRect(zoneRect)
+        canvas.drawRect(zoneRect, zoneShadow)
+        canvas.drawRect(zoneRect, zonePaint)
     }
 
     private fun drawSpot(canvas: Canvas, bmp: Bitmap, spot: SpotLabel) {

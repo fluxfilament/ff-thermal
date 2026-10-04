@@ -32,48 +32,224 @@
             android:layout_weight="1"
             android:text="@string/calibration_title" />
 
-        <TextView
-            style="@style/Ff.Stamp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_stamp_wip"
-            android:text="@string/stamp_wip"
-            android:textColor="@color/ff_accent2" />
-    </LinearLayout>
+</LinearLayout>
 
-    <FrameLayout
+    <ScrollView
+        android:id="@+id/calibrationScroll"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
-
-        <com.fluxfilament.thermalcam.GridBackgroundView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
             android:orientation="vertical"
-            android:paddingStart="32dp"
-            android:paddingEnd="32dp"
-            android:paddingBottom="140dp">
+            android:paddingBottom="40dp">
 
             <TextView
                 style="@style/Ff.Eyebrow"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/calibration_empty_eyebrow"
+                android:layout_marginTop="12dp"
+                android:text="@string/calib_section_correction"
                 android:textColor="@color/ff_muted" />
 
             <TextView
+                android:id="@+id/calibStatus"
+                style="@style/Ff.Mono"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textSize="26sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/calibStatusSub"
+                style="@style/Ff.RowSub"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp" />
+
+            <TextView
+                style="@style/Ff.Eyebrow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:paddingBottom="8dp"
+                android:text="@string/calib_section_measure" />
+
+            <!-- What the camera sees, with the averaged zone outlined: aiming at a
+                 cup of water from a settings screen is guesswork otherwise. -->
+            <com.fluxfilament.thermalcam.ThermalView
+                android:id="@+id/calibPreview"
+                android:layout_width="match_parent"
+                android:layout_height="220dp"
+                android:background="@color/ff_well" />
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:lineSpacingMultiplier="1.45"
-                android:text="@string/calibration_empty"
-                android:textColor="@color/ff_text"
-                android:textSize="16sp" />
+                android:gravity="bottom"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/calibLive"
+                    style="@style/Ff.Mono"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="28sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    style="@style/Ff.RowSub"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginBottom="4dp"
+                    android:layout_weight="1"
+                    android:text="@string/calib_live_note" />
+            </LinearLayout>
+
+            <TextView
+                style="@style/Ff.RowTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="@string/calib_reference" />
+
+            <LinearLayout
+                android:id="@+id/calibRefOptions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal" />
+
+            <LinearLayout
+                android:id="@+id/calibCustomRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <TextView
+                    style="@style/Ff.RowSub"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/calib_custom_prompt" />
+
+                <EditText
+                    android:id="@+id/calibCustomValue"
+                    style="@style/Ff.Mono"
+                    android:layout_width="96dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_tool"
+                    android:gravity="center"
+                    android:importantForAutofill="no"
+                    android:inputType="numberDecimal|numberSigned"
+                    android:maxLength="6"
+                    android:textSize="18sp" />
+
+                <TextView
+                    style="@style/Ff.Mono"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/unit_celsius"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/calibRefNote"
+                style="@style/Ff.Note"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp" />
+
+            <TextView
+                android:id="@+id/calibMeasure"
+                style="@style/Ff.Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                style="@style/Ff.Eyebrow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:paddingBottom="8dp"
+                android:text="@string/calib_section_points" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/ff_border" />
+
+            <LinearLayout
+                android:id="@+id/calibPoints"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <TextView
+                android:id="@+id/calibMessage"
+                style="@style/Ff.Note"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/calibApply"
+                    style="@style/Ff.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:text="@string/calib_apply" />
+
+                <TextView
+                    android:id="@+id/calibReset"
+                    style="@style/Ff.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_opt"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:text="@string/calib_reset"
+                    android:textColor="@color/ff_text" />
+            </LinearLayout>
+
+            <TextView
+                style="@style/Ff.Eyebrow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:paddingBottom="8dp"
+                android:text="@string/calib_section_howto" />
+
+            <TextView
+                style="@style/Ff.Note"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/calib_howto" />
         </LinearLayout>
-    </FrameLayout>
+    </ScrollView>
 </LinearLayout>

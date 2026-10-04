@@ -287,6 +287,9 @@ object SnapshotCard {
                 BlendMode.VISIBLE -> R.string.card_blend_visible
             },
         )
+        if (!scene.planck.correction.isIdentity) {
+            tokens += context.getString(R.string.card_correction, scene.planck.correction.label(RU))
+        }
         if (scene.rangeFixed) tokens += context.getString(R.string.card_range_fixed)
         if (scene.mirrored) tokens += context.getString(R.string.mirror_label)
         return tokens.joinToString(SEPARATOR)

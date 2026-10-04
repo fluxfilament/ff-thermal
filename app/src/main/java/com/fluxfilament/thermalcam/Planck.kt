@@ -61,6 +61,11 @@ data class Planck(
     val emissivity: Double = 0.95,
     /** Apparent temperature of whatever the target is reflecting, in Kelvin. */
     val reflectedTemperature: Double = 295.15,
+    /**
+     * The user's correction from the calibration screen, applied to the result in
+     * both directions so that every reading, the scale and a fixed window agree.
+     */
+    val correction: Correction = Correction.NONE,
 ) {
 
     /**
@@ -83,7 +88,7 @@ data class Planck(
         val objectRaw = (scaled - (1 - emissivity) * reflectedRaw) / emissivity
         val ratio = r1 / (r2 * (objectRaw + o)) + f
         if (ratio <= 0) return Double.NaN
-        return b / ln(ratio) - 273.15
+        return correction.apply(b / ln(ratio) - 273.15)
     }
 
     /**
@@ -95,7 +100,7 @@ data class Planck(
      * one emissivity would quietly mean different temperatures at another.
      */
     fun celsiusToRaw(celsius: Double): Double {
-        val kelvin = celsius + 273.15
+        val kelvin = correction.invert(celsius) + 273.15
         if (kelvin <= 0) return Double.NaN
         val ratio = exp(b / kelvin)
         if (ratio <= f) return Double.NaN

@@ -116,8 +116,49 @@
 
     <!-- calibration screen -->
     <string name="calibration_title">Калибровка</string>
-    <string name="calibration_empty_eyebrow">Раздел в разработке</string>
-    <string name="calibration_empty">Содержание раздела проработаем позже.</string>
+    <string name="unit_celsius">°C</string>
+    <string name="calib_section_correction">Поправка показаний</string>
+    <string name="calib_none">Нет</string>
+    <string name="calib_summary_none">нет поправки</string>
+    <string name="calib_none_sub">Показания идут как есть, по константам камеры.</string>
+    <string name="calib_shift">%1$s °C</string>
+    <string name="calib_linear">×%1$s %2$s °C</string>
+    <string name="calib_applied_sub">%1$s · применена %2$s</string>
+    <string name="calib_section_measure">Замер эталона</string>
+    <string name="calib_live_note">среднее в рамке, ε 0,96, без поправки</string>
+    <string name="calib_reference">Эталон</string>
+    <string name="calib_ref_ice">Лёд\n0 °C</string>
+    <string name="calib_ref_boiling">Кипяток\n100 °C</string>
+    <string name="calib_ref_custom">Свой\nтермометр</string>
+    <string name="calib_ref_ice_short">лёд</string>
+    <string name="calib_ref_boiling_short">кипяток</string>
+    <string name="calib_ref_custom_short">свой эталон</string>
+    <string name="calib_custom_prompt">Температура по контактному термометру</string>
+    <string name="calib_note_ice">Тающий лёд с водой, не сухой из морозилки: перемешайте, подождите пару минут. Рамка — целиком на поверхности воды со льдом.</string>
+    <string name="calib_note_boiling">Вода должна кипеть бурно. Держите камеру сбоку и не над паром: конденсат на объективе сорвёт замер. 100 °C — у уровня моря, на каждые ~300 м высоты на градус меньше.</string>
+    <string name="calib_note_custom">Матовая поверхность с ε около 0,95–0,96 (вода, изолента, краска), температура которой измерена контактным термометром в тот же момент.</string>
+    <string name="calib_measure">Замерить · 3 с</string>
+    <string name="calib_measuring">Замер… %1$d / %2$d</string>
+    <string name="calib_no_camera">Подключите камеру</string>
+    <string name="calib_section_points">Замеры</string>
+    <string name="calib_points_empty">Пока нет. Один замер даст сдвиг, два эталона на расстоянии от 30 °C — сдвиг и наклон.</string>
+    <string name="calib_point">%1$s %2$s °C → замер %3$s °C</string>
+    <string name="calib_point_sub">разница %1$s °C · разброс %2$s °C</string>
+    <string name="calib_remove_point">Удалить замер</string>
+    <string name="calib_apply">Применить</string>
+    <string name="calib_reset">Сбросить</string>
+    <string name="calib_msg_restarted">Камера закрыла затвор посреди замера — начато заново.</string>
+    <string name="calib_msg_unsteady">Разброс %1$s °C — камера или вода двигались. Замер записан, но лучше повторить.</string>
+    <string name="calib_msg_bad_custom">Введите температуру эталона.</string>
+    <string name="calib_msg_no_points">Сначала сделайте замер.</string>
+    <string name="calib_msg_too_close">Эталоны ближе 30 °C друг к другу: наклон по ним выйдет случайным. Оставьте один или возьмите дальние.</string>
+    <string name="calib_msg_too_steep">Наклон вышел ×%1$s — за пределами ±10 %%. Скорее всего, один из замеров неверный.</string>
+    <string name="calib_msg_too_far">Поправка сдвинула бы показания на %1$s °C — больше 10 °C. Скорее всего, замер неверный: проверьте эталон и ε.</string>
+    <string name="calib_msg_applied">Поправка применена ко всем показаниям.</string>
+    <string name="calib_msg_reset">Поправка сброшена.</string>
+    <string name="calib_section_howto">Как это работает</string>
+    <string name="calib_howto">Это домашняя проверка, а не лабораторная калибровка: настоящую делают по эталонному чёрному телу. Камера сравнивается с тем, температура чего известна и без неё, — тающим льдом, кипятком или контактным термометром.\n\nЗамер берёт среднее по рамке в центре кадра за три секунды при ε 0,96 (вода) и без текущей поправки. Один эталон даёт сдвиг всех показаний. Два эталона, разнесённые хотя бы на 30 °C, дают ещё и наклон — например, лёд и кипяток.\n\nПоправка, сдвигающая показания больше чем на 10 °C, не принимается: такая разница почти всегда означает неудачный замер. Константы камеры при этом не меняются, поправку можно сбросить в любой момент.</string>
+    <string name="card_correction">поправка %1$s</string>
 
     <!-- log screen -->
     <string name="log_title">Журнал</string>

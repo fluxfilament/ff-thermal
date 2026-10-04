@@ -267,12 +267,12 @@
                     android:text="@string/row_calibration" />
 
                 <TextView
-                    style="@style/Ff.Stamp"
+                    android:id="@+id/calibrationSummary"
+                    style="@style/Ff.Mono"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_stamp_wip"
-                    android:text="@string/stamp_wip"
-                    android:textColor="@color/ff_accent2" />
+                    android:textColor="@color/ff_muted"
+                    android:textSize="14sp" />
 
                 <ImageView
                     android:layout_width="20dp"
