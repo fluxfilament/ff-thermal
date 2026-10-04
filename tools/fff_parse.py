@@ -64,26 +64,42 @@ def records(fff: bytes, order: str):
             yield main, sub, off, length
 
 
-def find_planck(rec: bytes, order: str):
-    """Locates the Planck coefficients by their shape, not by a fixed offset.
+# CameraInfo (record 0x20) fields at exiftool's offsets. Numbers inside a
+# record are little-endian whatever the index was - reading them in the
+# index's byte order is what made the old shape search come back empty on
+# JPEGs from the FLIR ONE app 2.20.1.
+CAMERA_INFO = (
+    ("Emissivity", 0x20, "f"),
+    ("ObjectDistance", 0x24, "f"),
+    ("ReflectedApparentTemperature", 0x28, "K"),
+    ("AtmosphericTemperature", 0x2C, "K"),
+    ("IRWindowTemperature", 0x30, "K"),
+    ("IRWindowTransmission", 0x34, "f"),
+    ("RelativeHumidity", 0x3C, "f"),
+    ("PlanckR1", 0x58, "f"),
+    ("PlanckB", 0x5C, "f"),
+    ("PlanckF", 0x60, "f"),
+    ("AtmosphericTransAlpha1", 0x70, "f"),
+    ("AtmosphericTransAlpha2", 0x74, "f"),
+    ("AtmosphericTransBeta1", 0x78, "f"),
+    ("AtmosphericTransBeta2", 0x7C, "f"),
+    ("AtmosphericTransX", 0x80, "f"),
+    ("PlanckO", 0x308, "i"),
+    ("PlanckR2", 0x30C, "f"),
+)
 
-    R1, B and F sit consecutively, and their magnitudes are unmistakable:
-    R1 in the thousands, B around 1400, F at or near 1. O (a negative
-    int32) and R2 (a small float) sit consecutively elsewhere. Matching on
-    shape means this does not depend on remembering exiftool's offset table
-    correctly, and it reports every candidate rather than the first.
-    """
-    triples, pairs = [], []
-    for off in range(0, len(rec) - 12, 4):
-        r1, b, f = struct.unpack(order + "fff", rec[off:off + 12])
-        if 1e3 < r1 < 1e6 and 1e3 < b < 2e3 and 0.5 <= f <= 2.0:
-            triples.append((off, r1, b, f))
-    for off in range(0, len(rec) - 8, 4):
-        o = struct.unpack(order + "i", rec[off:off + 4])[0]
-        r2 = struct.unpack(order + "f", rec[off + 4:off + 8])[0]
-        if -1e5 < o < 0 and 1e-4 < r2 < 1.0:
-            pairs.append((off, o, r2))
-    return triples, pairs
+
+def camera_info(rec: bytes) -> dict:
+    """The fields above, plus the model and software strings."""
+    info = {}
+    for name, at, kind in CAMERA_INFO:
+        value = struct.unpack("<" + ("i" if kind == "i" else "f"), rec[at:at + 4])[0]
+        info[name] = value
+    for name, at, size in (("CameraModel", 0x0d4, 32),
+                           ("CameraSoftware", 0x114, 16),
+                           ("LensModel", 0x170, 32)):
+        info[name] = rec[at:at + size].split(b"\x00")[0].decode("latin-1").strip()
+    return info
 
 
 def main(path):
@@ -93,28 +109,20 @@ def main(path):
     if not fff:
         return
     order = byte_order(fff)
-    print(f"  byte order: {'big' if order == '>' else 'little'}-endian")
+    print(f"  index byte order: {'big' if order == '>' else 'little'}-endian")
     for main_t, sub_t, off, length in records(fff, order):
         print(f"  record main=0x{main_t:02x} sub=0x{sub_t:02x} off={off} len={length}")
         if main_t != 0x20:  # CameraInfo
             continue
-        rec = fff[off:off + length]
-        triples, pairs = find_planck(rec, order)
-        for o, r1, b, f in triples:
-            print(f"    R1/B/F candidate @0x{o:03x}: R1={r1:.4f} B={b:.4f} F={f:.4f}")
-        for o, oo, r2 in pairs:
-            print(f"    O/R2 candidate  @0x{o:03x}: O={oo} R2={r2:.9f}")
-        emis, dist, refl = struct.unpack(order + "fff", rec[0x20:0x2c])
-        print(f"    Emissivity={emis:.4f} ObjectDistance={dist:.4f} "
-              f"ReflectedApparentTemp={refl:.2f} K ({refl - 273.15:.2f} C)")
-        for label, at, size in (("CameraModel", 0x0d4, 32),
-                                ("CameraPartNumber", 0x0f4, 16),
-                                ("CameraSerialNumber", 0x104, 16),
-                                ("CameraSoftware", 0x114, 16),
-                                ("LensModel", 0x170, 32)):
-            s = rec[at:at + size].split(b"\x00")[0].decode("latin-1").strip()
-            if s:
-                print(f"    {label}: {s}")
+        # The serial number sits at 0x104 and is left out on purpose: it
+        # identifies the unit and has no business in a log or a paste.
+        for name, value in camera_info(fff[off:off + length]).items():
+            if isinstance(value, float) and dict((n, k) for n, _, k in CAMERA_INFO).get(name) == "K":
+                print(f"    {name}: {value:.2f} K ({value - 273.15:.2f} C)")
+            elif isinstance(value, float):
+                print(f"    {name}: {value:.6g}")
+            elif value != "":
+                print(f"    {name}: {value}")
 
 
 if __name__ == "__main__":
