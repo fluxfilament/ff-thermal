@@ -87,7 +87,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     )
 
     private companion object {
-        const val TAG = "FlirOneViewer"
+        const val TAG = "FFThermal"
         const val ACTION_USB_PERMISSION = "com.fluxfilament.thermalcam.USB_PERMISSION"
         const val MAX_LOG_LINES = 400
         const val PREFS = "flir-one-viewer"
@@ -136,13 +136,6 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
 
         /** Gap between the sheet and the bottom of the window, over the bars below it. */
         const val SHEET_LIFT_DP = 240
-
-        /**
-         * Numbers are written the way the interface reads them: a decimal comma. The
-         * phone's own locale is not asked, because the strings around the numbers are
-         * not translated either - see the note in strings.xml.
-         */
-        val RU: Locale = Locale.forLanguageTag("ru")
 
         val MATCH: Int = ViewGroup.LayoutParams.MATCH_PARENT
         val WRAP: Int = ViewGroup.LayoutParams.WRAP_CONTENT
@@ -342,6 +335,9 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
     private var rangeLowC = DEFAULT_RANGE_LOW_C
     private var rangeHighC = DEFAULT_RANGE_HIGH_C
 
+    /** Numbers are written the way the interface reads them - see [uiLocale]. */
+    private val locale: Locale get() = uiLocale()
+
     /**
      * Coefficients for the unit this was developed on, with the user's emissivity
      * applied on top. Readings from another camera will be off - see [Planck] for how
@@ -440,7 +436,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
             registerReceiver(usbReceiver, filter)
         }
 
-        onLog("FLIR One Viewer - live view")
+        onLog("F&F Thermal - live view")
         findFlirDevice()?.let { requestPermissionOrStart(it) }
             ?: onLog(
                 "Camera not attached. Plug in the FLIR One and re-open the app, or it " +
@@ -1171,7 +1167,7 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
             )
             addView(
                 TextView(context, null, 0, R.style.Ff_Mono).apply {
-                    text = palette.label.uppercase(RU)
+                    text = palette.label.uppercase(locale)
                     textSize = 12f
                     letterSpacing = 0.06f
                     gravity = Gravity.CENTER
@@ -1227,11 +1223,11 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         emissivitySummary.text = getString(
             R.string.emissivity_summary,
             dec(eps, 2),
-            nearest?.let { getString(it.nameRes).lowercase(RU) }
+            nearest?.let { getString(it.nameRes).lowercase(locale) }
                 ?: getString(R.string.emissivity_custom),
         )
         calibrationSummary.text = planck.correction.let {
-            if (it.isIdentity) getString(R.string.calib_summary_none) else it.label(RU)
+            if (it.isIdentity) getString(R.string.calib_summary_none) else it.label(locale)
         }
         fovSummary.text = getString(R.string.fov_summary, dec(compositor.fovRatio.toDouble(), 2))
         val stats = lastStats
@@ -1622,10 +1618,10 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
 
     private fun dec(value: Double, digits: Int = 1): String =
         if (value.isNaN()) getString(R.string.stat_none)
-        else String.format(RU, "%.${digits}f", value)
+        else String.format(locale, "%.${digits}f", value)
 
     private fun signed(value: Double): String =
-        (if (value < 0) "−" else "+") + String.format(RU, "%.3f", abs(value))
+        (if (value < 0) "−" else "+") + String.format(locale, "%.3f", abs(value))
 
     private fun separator(): View = View(this).apply {
         setBackgroundColor(getColor(R.color.ff_border))

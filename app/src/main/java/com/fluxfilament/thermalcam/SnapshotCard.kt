@@ -83,9 +83,11 @@ object SnapshotCard {
      */
     private const val UNITS_ACROSS = 345f
 
-    private val RU: Locale = Locale.forLanguageTag("ru")
+    /** Set from the context at the start of each render; the card is drawn on one thread. */
+    private var locale: Locale = Locale.ROOT
 
     fun render(context: Context, scene: CardScene): Bitmap {
+        locale = context.uiLocale()
         val src = scene.picture
         val turned = scene.rotation % 180 != 0
         val srcW = if (turned) src.height else src.width
@@ -268,7 +270,7 @@ object SnapshotCard {
      */
     private fun dataTokens(context: Context, scene: CardScene): String {
         val tokens = mutableListOf<String>()
-        tokens += DateFormat.format("dd.MM.yyyy HH:mm", scene.takenAt).toString()
+        tokens += DateFormat.format(DateFormat.getBestDateTimePattern(locale, "ddMMyyyyHHmm"), scene.takenAt).toString()
         val info = scene.geometry
         tokens += when {
             info == null -> context.getString(R.string.geometry_unknown)
@@ -277,7 +279,7 @@ object SnapshotCard {
             else -> context.getString(R.string.geometry_short, info.width, info.height)
         }
         tokens += context.getString(
-            R.string.emissivity_chip, String.format(RU, "%.2f", scene.planck.emissivity),
+            R.string.emissivity_chip, String.format(locale, "%.2f", scene.planck.emissivity),
         )
         tokens += context.getString(
             when (scene.blend) {
@@ -288,7 +290,7 @@ object SnapshotCard {
             },
         )
         if (!scene.planck.correction.isIdentity) {
-            tokens += context.getString(R.string.card_correction, scene.planck.correction.label(RU))
+            tokens += context.getString(R.string.card_correction, scene.planck.correction.label(locale))
         }
         if (scene.rangeFixed) tokens += context.getString(R.string.card_range_fixed)
         if (scene.mirrored) tokens += context.getString(R.string.mirror_label)
@@ -317,7 +319,7 @@ object SnapshotCard {
     }
 
     private fun celsius(value: Double): String =
-        if (value.isNaN()) EMPTY else String.format(RU, "%.1f°C", value)
+        if (value.isNaN()) EMPTY else String.format(locale, "%.1f°C", value)
 
     /** Shown for a window auto-gain has not settled on yet. */
     /** Stands in for a window auto-gain has not settled on yet. */

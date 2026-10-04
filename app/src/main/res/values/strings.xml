@@ -1,203 +1,213 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    The interface is in Russian, which is the language it was designed in and the
-    language its only user reads. It is deliberately not split into values/ (English)
-    and values-ru/ yet: how many languages are worth carrying is an open question in
-    the author's notes, and guessing at the split before answering it would mean
-    redoing it. See todo: "Анализ локализации FLIR One".
+    English: the default for every locale without its own translation. Russian, the
+    language the interface was designed in, lives in values-ru/. A string added here
+    needs its Russian counterpart there too.
 -->
 <resources>
-    <string name="app_name">FLIR One Viewer</string>
-    <string name="thermal_view_description">Живой тепловой кадр</string>
+    <!-- Which language numbers and dates are formatted for: the one these strings are in. -->
+    <string name="number_locale" translatable="false">en</string>
+    <string name="app_name">F&amp;F Thermal</string>
+    <string name="thermal_view_description">Live thermal image</string>
 
     <!-- live screen -->
     <string name="state_live">[LIVE]</string>
-    <string name="state_calibrating">[КАЛИБРОВКА]</string>
-    <string name="state_no_camera">[НЕТ КАМЕРЫ]</string>
-    <string name="state_waiting">[ОЖИДАНИЕ]</string>
+    <string name="state_calibrating">[CALIBRATING]</string>
+    <string name="state_no_camera">[NO CAMERA]</string>
+    <string name="state_waiting">[WAITING]</string>
     <string name="geometry">%1$d×%2$d · LEPTON %3$s</string>
     <string name="geometry_short">%1$d×%2$d</string>
-    <string name="geometry_unknown">ГЕОМЕТРИЯ НЕИЗВЕСТНА</string>
+    <string name="geometry_unknown">GEOMETRY UNKNOWN</string>
     <string name="align_label">Align %1$s</string>
-    <string name="align_description">Совмещение слоёв по расстоянию</string>
+    <string name="align_description">Layer alignment by distance</string>
     <string name="scale_min">MIN</string>
     <string name="scale_max">MAX</string>
-    <string name="scale_low_description">Нижняя граница шкалы</string>
-    <string name="scale_high_description">Верхняя граница шкалы</string>
-    <string name="lock_locked_description">Шкала зафиксирована. Нажмите, чтобы вернуть авто</string>
-    <string name="lock_auto_description">Шкала следует за сценой. Нажмите, чтобы зафиксировать</string>
+    <string name="scale_low_description">Lower end of the scale</string>
+    <string name="scale_high_description">Upper end of the scale</string>
+    <string name="lock_locked_description">Scale is fixed. Tap to return to auto</string>
+    <string name="lock_auto_description">Scale follows the scene. Tap to fix it</string>
     <string name="emissivity_chip">ε %1$s</string>
     <string name="degrees_short">%1$s°</string>
-    <string name="settings_description">Настройки</string>
-    <string name="blend_description">Режим наложения видимого канала</string>
-    <string name="mirror_description">Зеркальное отображение</string>
-    <string name="mirror_label">ЗЕРК</string>
-    <string name="shutter_description">Сохранить снимок</string>
-    <string name="spot_minus_description">Убрать точку замера</string>
-    <string name="spot_plus_description">Добавить точку замера</string>
+    <string name="settings_description">Settings</string>
+    <string name="blend_description">Visible-light blend mode</string>
+    <string name="mirror_description">Mirror image</string>
+    <string name="mirror_label">MIRROR</string>
+    <string name="shutter_description">Save snapshot</string>
+    <string name="spot_minus_description">Remove a measurement spot</string>
+    <string name="spot_plus_description">Add a measurement spot</string>
 
     <!-- blend modes, as they appear under the tool icon -->
-    <string name="blend_thermal">ИК</string>
-    <string name="blend_mix35">ИК 35</string>
-    <string name="blend_mix60">ИК 60</string>
-    <string name="blend_visible">ВИД</string>
+    <string name="blend_thermal">IR</string>
+    <string name="blend_mix35">IR 35</string>
+    <string name="blend_mix60">IR 60</string>
+    <string name="blend_visible">VIS</string>
 
     <!-- scale sheet -->
-    <string name="sheet_low">Нижняя граница</string>
-    <string name="sheet_high">Верхняя граница</string>
+    <string name="sheet_low">Lower end</string>
+    <string name="sheet_high">Upper end</string>
     <string name="sheet_celsius">%1$d °C</string>
-    <string name="sheet_other_low">низ %1$d °C</string>
-    <string name="sheet_other_high">верх %1$d °C</string>
-    <string name="sheet_fixed">[ФИКСАЦИЯ]</string>
-    <string name="sheet_will_fix">Сдвиньте — шкала зафиксируется</string>
-    <string name="sheet_done">Готово</string>
-    <string name="close">Закрыть</string>
-    <string name="back">Назад</string>
+    <string name="sheet_other_low">low %1$d °C</string>
+    <string name="sheet_other_high">high %1$d °C</string>
+    <string name="sheet_fixed">[FIXED]</string>
+    <string name="sheet_will_fix">Move it and the scale gets fixed</string>
+    <string name="sheet_done">Done</string>
+    <string name="close">Close</string>
+    <string name="back">Back</string>
 
     <!-- settings -->
-    <string name="settings_title">Настройки</string>
-    <string name="section_image">Изображение</string>
-    <string name="field_palette">Палитра</string>
-    <string name="field_rotation">Поворот кадра</string>
+    <string name="settings_title">Settings</string>
+    <string name="section_image">Image</string>
+    <string name="field_palette">Palette</string>
+    <string name="field_rotation">Image rotation</string>
     <string name="rotation_option">%1$d°</string>
-    <string name="section_measurement">Измерение</string>
-    <string name="row_emissivity">Излучательная способность</string>
+    <string name="section_measurement">Measurement</string>
+    <string name="row_emissivity">Emissivity</string>
     <string name="emissivity_summary">ε %1$s · %2$s</string>
-    <string name="emissivity_custom">своё значение</string>
-    <string name="section_alignment">Совмещение камер</string>
-    <string name="row_fov">Поле зрения (FOV)</string>
-    <string name="fov_summary">%1$s · по умолчанию 0,77</string>
-    <string name="align_note">Сдвиг слоёв по расстоянию (Align) — на главном экране, в режимах наложения.</string>
-    <string name="section_calibration">Калибровка</string>
-    <string name="row_calibration">Калибровка</string>
-    <string name="stamp_wip">[В РАБОТЕ]</string>
-    <string name="section_diagnostics">Диагностика</string>
-    <string name="row_log">Журнал</string>
+    <string name="emissivity_custom">custom value</string>
+    <string name="section_alignment">Camera alignment</string>
+    <string name="row_fov">Field of view (FOV)</string>
+    <string name="fov_summary">%1$s · default 0.77</string>
+    <string name="align_note">Layer offset by distance (Align) is on the main screen, in the blend modes.</string>
+    <string name="section_calibration">Calibration</string>
+    <string name="row_calibration">Calibration</string>
+    <string name="stamp_wip">[IN PROGRESS]</string>
+    <string name="section_diagnostics">Diagnostics</string>
+    <string name="row_log">Log</string>
     <string name="log_summary">%1$s fps · FFC %2$d · resync %3$d</string>
-    <string name="log_summary_idle">поток остановлен</string>
+    <string name="log_summary_idle">stream stopped</string>
     <string name="stamp_design">[F&amp;F DESIGN]</string>
 
     <!-- emissivity screen -->
-    <string name="emissivity_title">Излучательная способность</string>
-    <string name="emissivity_current">Текущее значение</string>
+    <string name="emissivity_title">Emissivity</string>
+    <string name="emissivity_current">Current value</string>
     <string name="emissivity_big">ε %1$s</string>
-    <string name="emissivity_surface">%1$s поверхность</string>
-    <string name="emissivity_own">Своё значение</string>
-    <string name="section_gloss">Блеск поверхности</string>
-    <string name="preset_matte">Матовая</string>
-    <string name="preset_matte_examples">Краска, кирпич, дерево, пластик, кожа</string>
-    <string name="preset_semi_matte">Полуматовая</string>
-    <string name="preset_semi_matte_examples">Слабый блеск</string>
-    <string name="preset_semi_gloss">Полуглянцевая</string>
-    <string name="preset_semi_gloss_examples">Заметный блеск</string>
-    <string name="preset_gloss">Глянцевая</string>
-    <string name="preset_gloss_examples">Сильный блеск: поверхность отражает окружение</string>
-    <string name="stamp_default">[ПО УМОЛЧАНИЮ]</string>
-    <string name="preset_metal">Полированный металл</string>
-    <string name="preset_metal_note">Ниже 0,30: поверхность больше отражает, чем излучает, а поправка усиливает шум сенсора. Замер ненадёжен.</string>
-    <string name="stamp_unreliable">[НЕНАДЁЖНО]</string>
-    <string name="section_why">Почему это важно</string>
+    <string name="emissivity_surface">%1$s surface</string>
+    <string name="emissivity_own">Custom value</string>
+    <string name="section_gloss">Surface gloss</string>
+    <string name="preset_matte">Matte</string>
+    <string name="preset_matte_examples">Paint, brick, wood, plastic, skin</string>
+    <string name="preset_semi_matte">Semi-matte</string>
+    <string name="preset_semi_matte_examples">Faint sheen</string>
+    <string name="preset_semi_gloss">Semi-gloss</string>
+    <string name="preset_semi_gloss_examples">Noticeable sheen</string>
+    <string name="preset_gloss">Gloss</string>
+    <string name="preset_gloss_examples">Strong sheen: the surface reflects its surroundings</string>
+    <string name="stamp_default">[DEFAULT]</string>
+    <string name="preset_metal">Polished metal</string>
+    <string name="preset_metal_note">Below 0.30 the surface reflects more than it emits, and the correction amplifies sensor noise. The reading is unreliable.</string>
+    <string name="stamp_unreliable">[UNRELIABLE]</string>
+    <string name="section_why">Why it matters</string>
     <string name="why_header_eps">ε</string>
-    <string name="why_header_hot">Горячая точка</string>
-    <string name="why_note">Один и тот же объект, та же камера, меняли только ε. Чем горячее объект относительно комнаты, тем сильнее ошибка.</string>
-    <string name="section_recommendation">Рекомендация</string>
-    <string name="recommendation">Не знаете поверхность — оставьте 0,95: большинство бытовых поверхностей матовые. На блестящий металл наклейте кусок изоленты или матового скотча и мерьте по нему.</string>
+    <string name="why_header_hot">Hot spot</string>
+    <string name="why_note">The same object, the same camera, only ε changed. The hotter the object is than the room, the bigger the error.</string>
+    <string name="section_recommendation">Recommendation</string>
+    <string name="recommendation">If you do not know the surface, leave it at 0.95: most everyday surfaces are matte. On shiny metal, stick on a piece of electrical tape or matte tape and measure on that.</string>
 
     <!-- field of view screen -->
-    <string name="fov_title">Поле зрения</string>
-    <string name="fov_reset">Сброс</string>
+    <string name="fov_title">Field of view</string>
+    <string name="fov_reset">Reset</string>
     <string name="fov_value">FOV</string>
-    <string name="fov_default">по умолчанию 0,77</string>
-    <string name="fov_note">Двигайте, пока край предмета не сойдётся по обе стороны линии.</string>
-    <string name="fov_tag_thermal">ИК</string>
-    <string name="fov_tag_visible">ВИДИМАЯ</string>
-    <string name="fov_split_description">Граница сравнения камер</string>
-    <string name="fov_description">Поле зрения</string>
+    <string name="fov_default">default 0.77</string>
+    <string name="fov_note">Move it until an edge of the object lines up on both sides of the line.</string>
+    <string name="fov_tag_thermal">IR</string>
+    <string name="fov_tag_visible">VISIBLE</string>
+    <string name="fov_split_description">Camera comparison divider</string>
+    <string name="fov_description">Field of view</string>
 
     <!-- calibration screen -->
-    <string name="calibration_title">Калибровка</string>
+    <string name="calibration_title">Calibration</string>
     <string name="unit_celsius">°C</string>
-    <string name="consts_section">Константы камеры</string>
-    <string name="consts_built_in_status">Встроенные — экземпляр, на котором разрабатывалось приложение</string>
-    <string name="consts_imported_status">Из снимка %1$s · %2$s</string>
-    <string name="consts_values">R1 %1$s · B %2$s · F %3$s\nO %4$s · R2 %5$s\nокно %6$s при %7$s °C · воздух %8$s °C</string>
-    <string name="consts_note">У каждого экземпляра FLIR ONE свои константы: на чужих показания уходят на градусы. Если камера не та, на которой разрабатывалось приложение, сохраните любой кадр официальным приложением FLIR ONE и выберите его здесь.</string>
-    <string name="consts_import">Из снимка FLIR</string>
-    <string name="consts_built_in">Встроенные</string>
-    <string name="consts_msg_same">Константы в снимке совпадают с текущими — ничего не менялось.</string>
-    <string name="consts_msg_applied">Константы загружены. Поправка и замеры сброшены: они сняты с прежними константами.</string>
-    <string name="consts_msg_applied_clean">Константы загружены.</string>
-    <string name="consts_msg_not_flir">В этом файле нет радиометрических данных FLIR. Нужен JPEG, сохранённый официальным приложением FLIR ONE, без пересжатия и редактирования.</string>
-    <string name="consts_msg_read_failed">Не удалось прочитать файл: %1$s</string>
-    <string name="calib_section_correction">Поправка показаний</string>
-    <string name="calib_none">Нет</string>
-    <string name="calib_summary_none">нет поправки</string>
-    <string name="calib_none_sub">Показания идут как есть, по константам камеры.</string>
+    <string name="consts_section">Camera constants</string>
+    <string name="consts_built_in_status">Built-in: the unit this app was developed on</string>
+    <string name="consts_imported_status">From a %1$s snapshot · %2$s</string>
+    <string name="consts_values">R1 %1$s · B %2$s · F %3$s\nO %4$s · R2 %5$s\nwindow %6$s at %7$s °C · air %8$s °C</string>
+    <string name="consts_note">Every FLIR ONE unit has its own constants, and another unit\'s put readings off by degrees. If your camera is not the one this app was developed on, save any picture with the official FLIR ONE app and pick it here.</string>
+    <string name="consts_import">From snapshot</string>
+    <string name="consts_built_in">Built-in</string>
+    <string name="consts_msg_same">The constants in this snapshot match the current ones; nothing changed.</string>
+    <string name="consts_msg_applied">Constants loaded. The correction and measurements were reset: they were taken with the previous constants.</string>
+    <string name="consts_msg_applied_clean">Constants loaded.</string>
+    <string name="consts_msg_not_flir">This file has no FLIR radiometric data. It needs a JPEG saved by the official FLIR ONE app, not recompressed or edited.</string>
+    <string name="consts_msg_read_failed">Could not read the file: %1$s</string>
+    <string name="calib_section_correction">Reading correction</string>
+    <string name="calib_none">None</string>
+    <string name="calib_summary_none">no correction</string>
+    <string name="calib_none_sub">Readings are used as they are, from the camera constants.</string>
     <string name="calib_shift">%1$s °C</string>
     <string name="calib_linear">×%1$s %2$s °C</string>
-    <string name="calib_applied_sub">%1$s · применена %2$s</string>
-    <string name="calib_section_measure">Замер эталона</string>
-    <string name="calib_live_note">среднее в рамке, ε 0,96, без поправки</string>
-    <string name="calib_reference">Эталон</string>
-    <string name="calib_ref_ice">Лёд\n0 °C</string>
-    <string name="calib_ref_boiling">Кипяток\n100 °C</string>
-    <string name="calib_ref_custom">Свой\nтермометр</string>
-    <string name="calib_ref_ice_short">лёд</string>
-    <string name="calib_ref_boiling_short">кипяток</string>
-    <string name="calib_ref_custom_short">свой эталон</string>
-    <string name="calib_custom_prompt">Температура по контактному термометру</string>
-    <string name="calib_note_ice">Тающий лёд с водой, не сухой из морозилки: перемешайте, подождите пару минут. Рамка — целиком на поверхности воды со льдом.</string>
-    <string name="calib_note_boiling">Вода должна кипеть бурно. Держите камеру сбоку и не над паром: конденсат на объективе сорвёт замер. 100 °C — у уровня моря, на каждые ~300 м высоты на градус меньше.</string>
-    <string name="calib_note_custom">Матовая поверхность с ε около 0,95–0,96 (вода, изолента, краска), температура которой измерена контактным термометром в тот же момент.</string>
-    <string name="calib_measure">Замерить · 3 с</string>
-    <string name="calib_measuring">Замер… %1$d / %2$d</string>
-    <string name="calib_no_camera">Подключите камеру</string>
-    <string name="calib_section_points">Замеры</string>
-    <string name="calib_points_empty">Пока нет. Один замер даст сдвиг, два эталона на расстоянии от 30 °C — сдвиг и наклон.</string>
-    <string name="calib_point">%1$s %2$s °C → замер %3$s °C</string>
-    <string name="calib_point_sub">разница %1$s °C · разброс %2$s °C</string>
-    <string name="calib_remove_point">Удалить замер</string>
-    <string name="calib_apply">Применить</string>
-    <string name="calib_reset">Сбросить</string>
-    <string name="calib_msg_restarted">Камера закрыла затвор посреди замера — начато заново.</string>
-    <string name="calib_msg_unsteady">Разброс %1$s °C — камера или вода двигались. Замер записан, но лучше повторить.</string>
-    <string name="calib_msg_bad_custom">Введите температуру эталона.</string>
-    <string name="calib_msg_no_points">Сначала сделайте замер.</string>
-    <string name="calib_msg_too_close">Эталоны ближе 30 °C друг к другу: наклон по ним выйдет случайным. Оставьте один или возьмите дальние.</string>
-    <string name="calib_msg_too_steep">Наклон вышел ×%1$s — за пределами ±10 %%. Скорее всего, один из замеров неверный.</string>
-    <string name="calib_msg_too_far">Поправка сдвинула бы показания на %1$s °C — больше 10 °C. Скорее всего, замер неверный: проверьте эталон и ε.</string>
-    <string name="calib_msg_applied">Поправка применена ко всем показаниям.</string>
-    <string name="calib_msg_reset">Поправка сброшена.</string>
-    <string name="calib_section_howto">Как это работает</string>
-    <string name="calib_howto">Это домашняя проверка, а не лабораторная калибровка: настоящую делают по эталонному чёрному телу. Камера сравнивается с тем, температура чего известна и без неё, — тающим льдом, кипятком или контактным термометром.\n\nЗамер берёт среднее по рамке в центре кадра за три секунды при ε 0,96 (вода) и без текущей поправки. Один эталон даёт сдвиг всех показаний. Два эталона, разнесённые хотя бы на 30 °C, дают ещё и наклон — например, лёд и кипяток.\n\nПоправка, сдвигающая показания больше чем на 10 °C, не принимается: такая разница почти всегда означает неудачный замер. Константы камеры при этом не меняются, поправку можно сбросить в любой момент.</string>
-    <string name="card_correction">поправка %1$s</string>
+    <string name="calib_applied_sub">%1$s · applied %2$s</string>
+    <string name="calib_section_measure">Reference measurement</string>
+    <string name="calib_live_note">mean inside the frame, ε 0.96, no correction</string>
+    <string name="calib_reference">Reference</string>
+    <string name="calib_ref_ice">Ice\n0 °C</string>
+    <string name="calib_ref_boiling">Boiling\n100 °C</string>
+    <string name="calib_ref_custom">Own\nthermometer</string>
+    <string name="calib_ref_ice_short">ice</string>
+    <string name="calib_ref_boiling_short">boiling water</string>
+    <string name="calib_ref_custom_short">own reference</string>
+    <string name="calib_custom_prompt">Temperature from a contact thermometer</string>
+    <string name="calib_note_ice">Melting ice with water, not dry ice straight from the freezer: stir it and wait a couple of minutes. Keep the whole frame on the ice-water surface.</string>
+    <string name="calib_note_boiling">The water must be boiling hard. Hold the camera to the side and out of the steam: condensation on the lens ruins the measurement. 100 °C is at sea level; it drops by about a degree for every ~300 m of altitude.</string>
+    <string name="calib_note_custom">A matte surface with ε around 0.95–0.96 (water, electrical tape, paint) whose temperature a contact thermometer measured at the same moment.</string>
+    <string name="calib_measure">Measure · 3 s</string>
+    <string name="calib_measuring">Measuring… %1$d / %2$d</string>
+    <string name="calib_no_camera">Connect the camera</string>
+    <string name="calib_section_points">Measurements</string>
+    <string name="calib_points_empty">None yet. One measurement gives a shift; two references at least 30 °C apart give a shift and a slope.</string>
+    <string name="calib_point">%1$s %2$s °C → read %3$s °C</string>
+    <string name="calib_point_sub">difference %1$s °C · spread %2$s °C</string>
+    <string name="calib_remove_point">Remove measurement</string>
+    <string name="calib_apply">Apply</string>
+    <string name="calib_reset">Reset</string>
+    <string name="calib_msg_restarted">The camera closed its shutter mid-measurement; started over.</string>
+    <string name="calib_msg_unsteady">Spread %1$s °C: the camera or the water moved. The measurement was recorded, but it is better to repeat it.</string>
+    <string name="calib_msg_bad_custom">Enter the reference temperature.</string>
+    <string name="calib_msg_no_points">Take a measurement first.</string>
+    <string name="calib_msg_too_close">The references are less than 30 °C apart, so the slope from them would be random. Keep one, or use references further apart.</string>
+    <string name="calib_msg_too_steep">The slope came out at ×%1$s, outside ±10 %%. Most likely one of the measurements is wrong.</string>
+    <string name="calib_msg_too_far">The correction would move readings by %1$s °C, more than 10 °C. Most likely the measurement is wrong: check the reference and ε.</string>
+    <string name="calib_msg_applied">Correction applied to all readings.</string>
+    <string name="calib_msg_reset">Correction reset.</string>
+    <string name="calib_section_howto">How it works</string>
+    <string name="calib_howto">This is a home check, not a laboratory calibration: a real one is done against a reference black body. The camera is compared with things whose temperature is known without it: melting ice, boiling water or a contact thermometer.\n\nA measurement takes the mean inside the frame in the middle of the image over three seconds, at ε 0.96 (water) and without the current correction. One reference shifts all readings. Two references at least 30 °C apart, such as ice and boiling water, also give a slope.\n\nA correction that would move readings by more than 10 °C is refused: a difference that large almost always means a failed measurement. The camera constants stay as they are, and the correction can be reset at any time.</string>
+    <string name="card_correction">correction %1$s</string>
 
     <!-- log screen -->
-    <string name="log_title">Журнал</string>
-    <string name="stat_frame">Кадр</string>
+    <string name="log_title">Log</string>
+    <string name="stat_frame">Frame</string>
     <string name="stat_lepton">Lepton</string>
-    <string name="stat_stream">Поток</string>
+    <string name="stat_stream">Stream</string>
     <string name="stat_ffc">FFC</string>
     <string name="stat_resync">Resync</string>
-    <string name="stat_scene">Сцена, °C</string>
+    <string name="stat_scene">Scene, °C</string>
     <string name="stat_none">—</string>
     <string name="stat_fps">%1$s fps</string>
     <string name="stat_scene_range">%1$s…%2$s</string>
 
     <!-- snapshots -->
     <!-- The blend modes as a card spells them out. The live screen can label the
-         button "ИК" because a lit-up icon sits beside it and the picture is right
+         button "IR" because a lit-up icon sits beside it and the picture is right
          there; a card is read on its own, months later, by someone who was not
          holding the camera. -->
-    <string name="card_blend_thermal">ТОЛЬКО ИК</string>
-    <string name="card_blend_mix35">ИК + ВИД 35 %</string>
-    <string name="card_blend_mix60">ИК + ВИД 60 %</string>
-    <string name="card_blend_visible">ТОЛЬКО ВИД</string>
+    <string name="card_blend_thermal">IR ONLY</string>
+    <string name="card_blend_mix35">IR + VIS 35 %</string>
+    <string name="card_blend_mix60">IR + VIS 60 %</string>
+    <string name="card_blend_visible">VISIBLE ONLY</string>
     <!-- On a card, beside the palette: the colours are pinned to a window the user
          set, not to the scene. Without it the same colour means something different
          in every picture. -->
-    <string name="card_range_fixed">ФИКС</string>
-    <string name="saved_to">Снимок сохранён · %1$s</string>
-    <string name="save_failed">Не удалось сохранить: %1$s</string>
-    <string name="nothing_to_save">Кадра ещё нет</string>
+    <string name="card_range_fixed">FIXED</string>
+    <string name="saved_to">Snapshot saved · %1$s</string>
+    <string name="save_failed">Could not save: %1$s</string>
+    <string name="nothing_to_save">No frame yet</string>
+
+    <!-- figures in layouts, kept here so their decimal separator follows the language -->
+    <string name="fov_res_thermal">IR 80×60</string>
+    <string name="fov_res_visible">VIS 1440×1080</string>
+    <string name="why_eps_1">0.92</string>
+    <string name="why_hot_1">36.7 °C</string>
+    <string name="why_eps_2">0.61</string>
+    <string name="why_hot_2">43.3 °C</string>
+    <string name="why_eps_3">0.27</string>
+    <string name="why_hot_3">65.9 °C</string>
 </resources>

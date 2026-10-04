@@ -99,7 +99,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:letterSpacing="0.04"
-                android:text="ИК 80×60"
+                android:text="@string/fov_res_thermal"
                 android:textColor="@color/ff_muted"
                 android:textSize="10sp" />
         </LinearLayout>
@@ -136,7 +136,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:letterSpacing="0.04"
-                android:text="ВИД 1440×1080"
+                android:text="@string/fov_res_visible"
                 android:textColor="@color/ff_muted"
                 android:textSize="10sp" />
         </LinearLayout>

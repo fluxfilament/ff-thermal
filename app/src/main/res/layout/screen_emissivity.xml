@@ -229,7 +229,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="0,92"
+                        android:text="@string/why_eps_1"
                         android:textSize="13sp" />
 
                     <TextView
@@ -237,7 +237,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="2"
-                        android:text="36,7 °C"
+                        android:text="@string/why_hot_1"
                         android:textSize="13sp" />
                 </LinearLayout>
 
@@ -260,7 +260,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="0,61"
+                        android:text="@string/why_eps_2"
                         android:textSize="13sp" />
 
                     <TextView
@@ -268,7 +268,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="2"
-                        android:text="43,3 °C"
+                        android:text="@string/why_hot_2"
                         android:textSize="13sp" />
                 </LinearLayout>
 
@@ -292,7 +292,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="0,27"
+                        android:text="@string/why_eps_3"
                         android:textSize="13sp" />
 
                     <LinearLayout
@@ -310,7 +310,7 @@
                             android:paddingTop="2dp"
                             android:paddingEnd="8dp"
                             android:paddingBottom="2dp"
-                            android:text="65,9 °C"
+                            android:text="@string/why_hot_3"
                             android:textColor="@color/ff_on_accent"
                             android:textSize="13sp"
                             android:textStyle="bold" />

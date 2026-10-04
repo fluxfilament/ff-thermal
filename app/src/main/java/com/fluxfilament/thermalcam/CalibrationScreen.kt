@@ -48,7 +48,7 @@ class CalibrationScreen(
     private val onCorrection: (Correction) -> Unit,
     private val onConstants: (CameraConstants) -> Unit,
 ) {
-    private val ru: Locale = Locale.forLanguageTag("ru")
+    private val ru: Locale get() = activity.uiLocale()
 
     private val status: TextView = activity.findViewById(R.id.calibStatus)
     private val statusSub: TextView = activity.findViewById(R.id.calibStatusSub)

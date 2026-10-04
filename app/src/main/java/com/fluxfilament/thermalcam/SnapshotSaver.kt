@@ -43,7 +43,7 @@ import java.util.Locale
  */
 object SnapshotSaver {
 
-    private const val ALBUM = "FlirOneViewer"
+    private const val ALBUM = "FFThermal"
 
     /** Where the untouched sensor picture goes, beside the album rather than in it. */
     private const val RAW = "raw"
