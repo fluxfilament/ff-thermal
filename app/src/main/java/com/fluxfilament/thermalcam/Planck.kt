@@ -69,9 +69,10 @@ data class Planck(
      * "compressed scale": melting ice read 5.7 C and boiling water 83.7 C, both
      * pulled toward the room. The official app showed -0.6 and 99.2 on the same
      * cups, and the full model below reproduces its figures from the raw image in
-     * its own JPEGs to within 0.4 C (-18.05 / -0.77 / 99.57 against -18.0 / -0.6 /
-     * 99.2, one of them at emissivity 0.60). Both values are in every FLIR ONE JPEG
-     * (CameraInfo 0x30 and 0x34).
+     * its own JPEGs to within 0.2 C at the app's own spot (-18.08 / -0.72 / 99.38
+     * against -18.0 / -0.6 / 99.2, one of them at emissivity 0.60) - PlanckTest
+     * holds it there. Both values are in every FLIR ONE JPEG (CameraInfo 0x30 and
+     * 0x34).
      */
     val irWindowTransmission: Double = 0.80,
     val irWindowTemperature: Double = 298.15,
@@ -125,9 +126,16 @@ data class Planck(
             (1 - t) / (e * t * w * t) * air
     }
 
-    fun rawToCelsius(raw: Int): Double {
-        val scaled = raw.toDouble() * usbScale
-        val objectRaw = scaled / pathGain - strayRaw
+    fun rawToCelsius(raw: Int): Double = countsToCelsius(raw.toDouble() * usbScale)
+
+    /**
+     * The same conversion for counts already on the coefficients' own scale - the
+     * scale of the raw thermal image inside a FLIR JPEG. Kept separate so the tests
+     * can feed it pixels from the official app's JPEGs and compare against the
+     * reading that app showed for them.
+     */
+    internal fun countsToCelsius(counts: Double): Double {
+        val objectRaw = counts / pathGain - strayRaw
         val ratio = r1 / (r2 * (objectRaw + o)) + f
         if (ratio <= 0) return Double.NaN
         return correction.apply(b / ln(ratio) - 273.15)
