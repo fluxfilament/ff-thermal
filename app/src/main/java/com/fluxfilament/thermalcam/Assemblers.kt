@@ -119,8 +119,9 @@ class TelemetryAssembler(
 
     private fun onMessage(payload: String) {
         val type = FlirProtocol.jsonField(payload, "type") ?: "unknown"
-        // Battery updates repeat every second; log each type once, in full.
-        if (seenTypes.add(type)) log("EP 0x81 message type=$type: $payload")
+        // Battery updates repeat every second; log each type once, in full - bar
+        // the serial numbers sledInformation carries.
+        if (seenTypes.add(type)) log("EP 0x81 message type=$type: ${FlirProtocol.redactIdentifiers(payload)}")
         if (sledInfo != null) return
         if (type != "sledInformation" && !payload.contains("thermalWidth")) return
         SledInfo.parse(payload)?.let { accept(it, payload) }

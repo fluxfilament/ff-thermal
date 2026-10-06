@@ -435,7 +435,6 @@ class FlirOneCamera(
             width = w,
             height = h,
             versionLepton = null,
-            serialNumberLepton = null,
             bigEndianThermal = false,
         )
     }

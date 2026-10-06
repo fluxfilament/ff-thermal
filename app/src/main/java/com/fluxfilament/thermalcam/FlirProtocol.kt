@@ -142,6 +142,26 @@ object FlirProtocol {
     /** Drops the NUL padding and other control bytes upstream leaves on its strings. */
     fun clean(s: String): String = s.filter { it.code >= 32 }.trim()
 
+    /**
+     * Fields of sledInformation that single out the physical unit: the board's and
+     * the sensor's serial numbers, and the sensor's QR label. The QR field reads
+     * "invalid" on the unit this was written against, but a unit that fills it in
+     * would be telling its label. Nothing in the app needs any of them.
+     */
+    private val IDENTIFYING_FIELDS = listOf("serialNumberBoard", "serialNumberLepton", "leptonQR")
+
+    private val identifying = Regex(
+        "\"(${IDENTIFYING_FIELDS.joinToString("|")})\"\\s*:\\s*(\"(?:[^\"\\\\]|\\\\.)*\"|[^,}\\]]*)"
+    )
+
+    /**
+     * [json] with the [IDENTIFYING_FIELDS] blanked out, for anything that gets logged.
+     * The log is shown in the app and ends up pasted into bug reports, and a serial
+     * number has no business in either.
+     */
+    fun redactIdentifiers(json: String): String =
+        identifying.replace(json) { "\"${it.groupValues[1]}\":\"hidden\"" }
+
     fun indexOf(haystack: ByteArray, haystackLen: Int, needle: ByteArray, from: Int = 0): Int {
         outer@ for (i in from..haystackLen - needle.size) {
             for (j in needle.indices) {
@@ -154,7 +174,7 @@ object FlirProtocol {
 }
 
 /**
- * Sensor geometry and identity, as the camera states it in the one-shot
+ * Sensor geometry and firmware, as the camera states it in the one-shot
  * `sledInformation` message on EP 0x81. Never hardcoded: the 80x60 (Lepton 2) and
  * 160x120 (Lepton 3 / FLIR One Pro) units differ, and the two upstream projects
  * disagree precisely because each hardcoded its own unit's size.
@@ -163,7 +183,6 @@ data class SledInfo(
     val width: Int,
     val height: Int,
     val versionLepton: String?,
-    val serialNumberLepton: String?,
     val bigEndianThermal: Boolean,
 ) {
     companion object {
@@ -175,7 +194,6 @@ data class SledInfo(
                 width = w,
                 height = h,
                 versionLepton = FlirProtocol.jsonField(json, "versionLepton"),
-                serialNumberLepton = FlirProtocol.jsonField(json, "serialNumberLepton"),
                 bigEndianThermal = FlirProtocol.jsonField(json, "bigEndianThermal") != "0",
             )
         }
