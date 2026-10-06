@@ -42,10 +42,6 @@ camera the app works with.
 | Unknown | other FLIR ONE models with the same USB ID (`09cb:1996`) |
 | Not supported | iPhone and Lightning models |
 
-**Known issue.** If you plug the camera in while the app is already
-running, the picture may not start. Close the app and open it again with
-the camera attached.
-
 ## Accuracy
 
 The app converts sensor counts to temperature with FLIR's own radiometric
