@@ -87,6 +87,17 @@ class FlirOneCamera(
         const val STATS_INTERVAL_MS = 1_000L
 
         /**
+         * Interface restarts the watchdog tries before it gives up on the connection
+         * and opens the device afresh. A warm start needs one restart; a camera
+         * plugged into the app while it was already running needed a full app
+         * restart, every time - and a full restart is exactly a close and re-open.
+         */
+        const val RESTARTS_BEFORE_REOPEN = 3
+
+        /** Pause before re-opening, so a camera still booting gets time to finish. */
+        const val REOPEN_PAUSE_MS = 1_000L
+
+        /**
          * Geometry fallback if sledInformation is missed entirely: thermal payload
          * size to sensor size. Only the two shipped sensors exist, and each has a
          * distinct packet count, so this is unambiguous where it applies.
@@ -134,11 +145,31 @@ class FlirOneCamera(
         worker = null
     }
 
+    /**
+     * Opens the device and streams until stopped. A connection the watchdog cannot
+     * revive is closed and the device opened again, for as long as the camera is
+     * attached. Restarting the app did exactly that, and nothing else helped.
+     */
     private fun run(device: UsbDevice) {
+        var reopens = 0
+        while (running && session(device) == Session.WEDGED) {
+            reopens++
+            listener.onLog(
+                "Still no frames after $RESTARTS_BEFORE_REOPEN interface restarts - " +
+                        "closing and re-opening the device (#$reopens)."
+            )
+            val until = System.currentTimeMillis() + REOPEN_PAUSE_MS
+            while (running && System.currentTimeMillis() < until) Thread.sleep(50)
+        }
+    }
+
+    private enum class Session { ENDED, WEDGED }
+
+    private fun session(device: UsbDevice): Session {
         val connection: UsbDeviceConnection = usbManager.openDevice(device)
             ?: run {
-                listener.onLog("openDevice() returned null - permission problem?")
-                return
+                listener.onLog("openDevice() returned null - permission problem, or the camera is gone?")
+                return Session.ENDED
             }
 
         val interfaces = (0 until device.interfaceCount).map { device.getInterface(it) }
@@ -148,7 +179,7 @@ class FlirOneCamera(
         }
 
         try {
-            pollLoop(connection, interfaces)
+            return pollLoop(connection, interfaces)
         } finally {
             // Android exposes no libusb_reset_device equivalent, so releasing the
             // interfaces explicitly is the most we can do to leave the camera in a
@@ -159,7 +190,7 @@ class FlirOneCamera(
         }
     }
 
-    private fun pollLoop(connection: UsbDeviceConnection, interfaces: List<UsbInterface>) {
+    private fun pollLoop(connection: UsbDeviceConnection, interfaces: List<UsbInterface>): Session {
         val endpoints = interfaces.flatMap { iface ->
             (0 until iface.endpointCount).map { iface.getEndpoint(it) }
         }
@@ -168,7 +199,7 @@ class FlirOneCamera(
         val epTelemetry = endpoints.firstOrNull { it.address == FlirProtocol.EP_TELEMETRY }
         if (epFrame == null || epTelemetry == null) {
             listener.onLog("FATAL: required endpoints missing (frame=$epFrame telemetry=$epTelemetry)")
-            return
+            return Session.ENDED
         }
 
         var geometry: SledInfo? = null
@@ -302,6 +333,7 @@ class FlirOneCamera(
         var lastStatsAt = lastFrameAt
         var framesAtLastStats = 0
         var completedAtLastCheck = 0
+        var restartsWithoutFrames = 0
 
         while (running) {
             val n = connection.bulkTransfer(epFrame, frameBuf, frameBuf.size, FRAME_READ_TIMEOUT_MS)
@@ -321,10 +353,13 @@ class FlirOneCamera(
             if (assembler.completed != completedAtLastCheck) {
                 completedAtLastCheck = assembler.completed
                 lastFrameAt = now
+                restartsWithoutFrames = 0
             }
 
             val fuse = if (assembler.completed == 0) FIRST_FRAME_RETRY_MS else STALL_RESTART_MS
             if (now - lastFrameAt > fuse) {
+                if (restartsWithoutFrames == RESTARTS_BEFORE_REOPEN) return Session.WEDGED
+                restartsWithoutFrames++
                 listener.onLog("No frames for ${fuse}ms - restarting the interfaces.")
                 startInterfaces(connection)
                 requestVideoStream(connection)
@@ -349,6 +384,7 @@ class FlirOneCamera(
                 lastStatsAt = now
             }
         }
+        return Session.ENDED
     }
 
     /** State 1: stop FRAME, stop FILEIO, start FILEIO. */
