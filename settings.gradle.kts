@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "flir-one-android-viewer"
+rootProject.name = "ff-thermal"
 include(":app")

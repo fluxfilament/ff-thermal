@@ -1,75 +1,89 @@
-# FLIR One Viewer (unofficial)
+# F&F Thermal — for FLIR ONE
 
-Unofficial, open-source Android app for the **FLIR One for Android**
-thermal camera (USB-C model). Talks to the camera directly over USB and
-reads the sensor at its native resolution, with access to the raw
-counts behind the picture.
+Open-source Android app for the **FLIR ONE for Android** thermal camera
+(gen 3, USB-C). It talks to the camera directly over USB, without FLIR's
+SDK, and reads the sensor at its native resolution.
 
-**Not affiliated with or endorsed by Teledyne FLIR.**
+**Not affiliated with or endorsed by Teledyne FLIR.** FLIR and FLIR ONE
+are trademarks of Teledyne FLIR; they are used here only to say which
+camera the app works with.
 
-## Status
+## What it does
 
-Early development. The USB protocol is verified against real hardware,
-and the decode pipeline (de-interleave → drop shutter-calibration frames
-→ colourise → live view) is in place. Still to come for v1: snapshot
-saving and temperature readout. No gallery or thermal/visible overlay —
-planned for later.
+- **Live view** at the sensor's own resolution (80×60 on the gen 3),
+  about 9–10 frames per second. The size is read from the camera, not
+  hardcoded.
+- **Temperatures in °C.** Up to nine spot meters you drag with a finger,
+  each averaging 3×3 pixels. Minimum, centre and maximum are in the
+  status line.
+- **Emissivity** from 0.10 to 1.00.
+- **Temperature range:** automatic, or a fixed window in °C, with a
+  scale bar under the picture.
+- **Visible-light overlay** from the camera's second lens: off, 35 %,
+  60 % or visible only, with field-of-view and alignment adjustment.
+- **Snapshots.** Each press saves a card to `Pictures/FFThermal` with the
+  picture, spots, scale and settings on it. The bare sensor picture,
+  nothing drawn over, goes to `Pictures/FFThermal/raw` under the same
+  name.
+- **Calibration.** Import your camera's own constants from a JPEG saved
+  by the official app, then correct readings against melting ice,
+  boiling water or a contact thermometer.
+- Palettes: grayscale and iron. Interface in English and Russian.
+- **No permissions and no network.** Snapshots go through the system
+  media store, and a JPEG for calibration is opened through the system
+  file picker, one file at a time.
 
-### Sensor resolution, stated plainly
+## What has been tested, and what has not
 
-The FLIR One for Android (Gen 3) carries a **Lepton 2 at 80×60**. The
-FLIR One **Pro** carries a Lepton 3 at 160×120. This app does not
-"unlock" a higher resolution on either — it reads whatever the camera
-reports in its `sledInformation` message and decodes that, so it works
-on both without a hardcoded size. Claims elsewhere that the official app
-halves a 160×120 sensor do not apply to the 80×60 hardware.
+| | |
+|---|---|
+| Tested | one FLIR ONE gen 3 (USB-C) on a Samsung Galaxy S21 |
+| Not tested | FLIR ONE **Pro** (Lepton 3, 160×120): the frame size comes from the camera, so it should work, but it has never been run |
+| Unknown | other FLIR ONE models with the same USB ID (`09cb:1996`) |
+| Not supported | iPhone and Lightning models |
 
-## Why this exists
+**Known issue.** If you plug the camera in while the app is already
+running, the picture may not start. Close the app and open it again with
+the camera attached.
 
-The third-party app that exposed the camera's raw sensor data (Thermal
-Camera+ for FLIR One, by Georg Friedrich) was pulled from Google Play,
-leaving the official app as the only option on current Android. This
-project is an open replacement, building on two existing open-source
-reverse-engineering efforts for the FLIR One's USB protocol (see
-[NOTICE](NOTICE) for full credit):
+## Accuracy
 
-- [fnoop/flirone-v4l2](https://github.com/fnoop/flirone-v4l2)
-- [Miso98/hw-flir-one-gen3](https://github.com/Miso98/hw-flir-one-gen3)
+The app converts sensor counts to temperature with FLIR's own radiometric
+model: the Planck equation with emissivity, reflected temperature, the
+protective window in front of the lens and the air. Its constants differ
+from one camera to the next.
 
-## Accuracy disclaimer
-
-The live view is currently raw sensor counts with per-frame auto-gain:
-it shows *hotter and colder*, not *how hot*. No temperature is displayed
-yet, and that is deliberate — converting counts to degrees needs the
-Planck-equation coefficients, which the upstream projects extracted from
-one sample unit's JPEG EXIF metadata rather than reading at runtime.
-Once temperature readout lands, treat it as indicative, not as a
-calibrated or certified measurement, especially on a physical unit other
-than the ones those constants were sampled from.
+- **Built-in constants belong to the unit this app was developed on.**
+  On another camera, readings can be off by degrees until you load your
+  own. Save any picture with the official FLIR ONE app, then open
+  *Calibration → Camera constants → From snapshot* and pick that JPEG.
+- On the development unit, the model matches the official app within
+  0.2 °C on three reference shots: melting ice at emissivity 0.60 and
+  0.95, and boiling water. `PlanckTest` keeps it there.
+- Treat readings as indicative, not as a certified measurement. The
+  camera's own accuracy limits still apply, and emissivity matters more
+  than anything else: bare metal reads tens of degrees off at the
+  default.
 
 ## Building
 
-Requires JDK 17+, Android SDK (compileSdk 37), and the Gradle wrapper
-(bundled, no local Gradle install needed once `gradlew` exists):
+Requires JDK 17+ and the Android SDK (compileSdk 37). The Gradle wrapper
+is bundled.
 
 ```
-./gradlew assembleDebug
+./gradlew assembleDebug        # build
+./gradlew installDebug         # install on a connected phone
+./gradlew testDebugUnitTest    # unit tests, no camera needed
 ```
 
-Install on a connected device/phone with the camera attached via USB-C
-OTG:
+`tools/fff_parse.py` prints a camera's constants from a JPEG saved by
+the official app, without exiftool. It leaves out the serial number.
 
-```
-./gradlew installDebug
-```
+## Credits and license
 
-## License
+GPL-3.0-or-later, see [LICENSE](LICENSE). The USB protocol work builds on
+two GPL-2.0-or-later reverse-engineering projects, credited in full in
+[NOTICE](NOTICE):
 
-GPL-3.0-or-later. See [LICENSE](LICENSE) and [NOTICE](NOTICE) (the
-NOTICE file credits the upstream protocol reverse-engineering this
-project is built on, as required by the GPL).
-
-## Support
-
-If you find this useful, donations are welcome via [link TBD] — entirely
-optional, no feature is gated behind it.
+- [fnoop/flirone-v4l2](https://github.com/fnoop/flirone-v4l2)
+- [Miso98/hw-flir-one-gen3](https://github.com/Miso98/hw-flir-one-gen3)
