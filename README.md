@@ -81,6 +81,19 @@ release is built and signed is in [RELEASING.md](RELEASING.md).
 `tools/fff_parse.py` prints a camera's constants from a JPEG saved by
 the official app, without exiftool. It leaves out the serial number.
 
+## Contributing
+
+Issues and pull requests are welcome. Please enable the pre-commit hook
+once per clone:
+
+```
+git config core.hooksPath .githooks
+```
+
+It refuses a commit that carries a known camera serial number, or a JPEG
+saved by the official FLIR app: those embed the serial number of the
+camera that took them. CI runs the same check over the whole history.
+
 ## Credits and license
 
 GPL-3.0-or-later, see [LICENSE](LICENSE). The USB protocol work builds on

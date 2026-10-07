@@ -20,6 +20,17 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The whole history, for the identifier check below.
+          fetch-depth: 0
+
+      # Serial numbers and FLIR JPEGs, in every commit: catches what the
+      # pre-commit hook would have stopped had it been on. The serials come
+      # from a repository secret; without it (forks) only the JPEG rule runs.
+      - name: No camera identifiers anywhere in the history
+        run: python3 tools/check_identifiers.py --history
+        env:
+          FFT_IDENTIFIERS: ${{ secrets.FFT_IDENTIFIERS }}
 
       - uses: actions/setup-java@v6
         with:

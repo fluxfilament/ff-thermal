@@ -1,0 +1,4 @@
+#!/bin/sh
+# Keeps serial numbers and FLIR JPEGs out of commits. Enable once per clone:
+#   git config core.hooksPath .githooks
+exec python3 tools/check_identifiers.py --staged
