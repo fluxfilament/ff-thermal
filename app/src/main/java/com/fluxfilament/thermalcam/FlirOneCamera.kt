@@ -269,10 +269,10 @@ class FlirOneCamera(
                     if (frames == 0) {
                         val rows = thermalSize / FlirProtocol.VOSPI_PACKET_BYTES
                         listener.onLog(
-                            "thermal payload $thermalSize B = $rows VoSPI packets = " +
+                            "thermal payload $thermalSize B = $rows VoSPI packets: " +
                                     "${info.height} image rows + " +
-                                    "${FlirProtocol.telemetryRows(thermalSize, info.width, info.height)} " +
-                                    "Lepton telemetry rows"
+                                    "${FlirProtocol.telemetryPackets(thermalSize, info.width, info.height)} " +
+                                    "Lepton telemetry packets"
                         )
                         listener.onLog("first frame status: ${status.raw}")
                         listener.onLog("visible JPEG in-frame: $jpgSize bytes")

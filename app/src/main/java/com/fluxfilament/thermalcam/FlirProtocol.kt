@@ -76,8 +76,12 @@ object FlirProtocol {
     const val VOSPI_PACKET_HEADER_BYTES = 4
     const val VOSPI_PIXELS_PER_PACKET = 80
 
-    /** Lepton telemetry rows appended after the image rows, if the payload has room. */
-    fun telemetryRows(thermalSize: Int, width: Int, height: Int): Int =
+    /**
+     * VoSPI packets left over after the image rows: Lepton telemetry. Counted in
+     * packets, not rows - at 80 wide the two are the same, but how a 160-wide sensor
+     * lays its telemetry out has never been seen on hardware here.
+     */
+    fun telemetryPackets(thermalSize: Int, width: Int, height: Int): Int =
         thermalSize / VOSPI_PACKET_BYTES - packetsPerRow(width) * height
 
     fun packetsPerRow(width: Int): Int =
