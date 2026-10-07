@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Backup on Android 9 to 11: the settings are included only when the transport
+    is a direct transfer to a new phone, never for the cloud backup. Android 12+
+    reads data_extraction_rules.xml instead.
+-->
+<full-backup-content>
+    <include domain="sharedpref" path="." requireFlags="deviceToDeviceTransfer" />
+</full-backup-content>

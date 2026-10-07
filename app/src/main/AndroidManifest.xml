@@ -3,8 +3,15 @@
 
     <uses-feature android:name="android.hardware.usb.host" android:required="true" />
 
+    <!--
+        Backup: no cloud copy of the settings, but a direct transfer to a new phone
+        carries them, so the camera's constants and calibration are not lost. The
+        rules differ by Android version; see res/xml/data_extraction_rules.xml.
+    -->
     <application
         android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"

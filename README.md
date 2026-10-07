@@ -33,7 +33,8 @@ camera the app works with.
 - Palettes: grayscale and iron. Interface in English and Russian.
 - **No permissions and no network.** Snapshots go through the system
   media store, and a JPEG for calibration is opened through the system
-  file picker, one file at a time.
+  file picker, one file at a time. Settings are left out of the cloud
+  backup; a direct transfer to a new phone carries them.
 
 ## What has been tested, and what has not
 

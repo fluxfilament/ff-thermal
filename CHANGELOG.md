@@ -43,6 +43,8 @@ First public release.
 ### Everything else
 - English and Russian interface.
 - No permissions and no network access.
+- Settings never go to the cloud backup. A direct transfer to a new phone
+  carries them, camera constants and calibration included.
 
 ### Known limitations
 - Tested on one camera. The FLIR ONE Pro (160×120) should work but has
