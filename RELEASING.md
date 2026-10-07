@@ -30,7 +30,18 @@ The same four values can come from the environment instead
 `FFT_KEY_PASSWORD`). Without either, `assembleRelease` still builds, but
 the APK is unsigned.
 
-Release certificate, SHA-256: *not created yet.*
+The release key was created on 2026-10-07: RSA 4096, alias `ff-thermal`,
+certificate `CN=F&F Thermal, O=fluxfilament`, valid until 2054. A copy of
+the key file and its password is kept in the maintainer's password
+manager. Every published APK must carry this certificate:
+
+```
+SHA-256: bc:aa:c2:08:f5:cf:ae:b6:2a:ae:e9:a5:dc:65:f0:2d:2c:dc:2e:e7:45:c6:98:4e:fd:64:a1:74:d3:5a:93:db
+```
+
+A phone with a debug build installed will not take the release build over
+it, because the two are signed with different keys. The debug build has
+to be uninstalled first, and its settings go with it.
 
 ## A release, step by step
 
