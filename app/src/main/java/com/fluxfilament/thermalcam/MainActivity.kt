@@ -16,6 +16,7 @@
  */
 package com.fluxfilament.thermalcam
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -640,7 +641,16 @@ class MainActivity : Activity(), FlirOneCamera.Listener {
         }
     }
 
-    /** Pre-33 path; from 33 on the dispatcher callback above is what runs. */
+    /**
+     * Pre-33 path; from 33 on the dispatcher callback above is what runs.
+     *
+     * Lint's GestureBackNavigation flags this override as if back gestures depended
+     * on it. They do not: the manifest opts in to OnBackInvokedCallback and the
+     * callback is registered on every version that has predictive back. Lint's
+     * suggested fix, AndroidX's OnBackPressedDispatcher, would pull in a dependency
+     * to do what the platform callback already does.
+     */
+    @SuppressLint("GestureBackNavigation")
     @Deprecated("Superseded by OnBackInvokedCallback on API 33+, still needed below it")
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onBackPressed() {
