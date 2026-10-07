@@ -4,7 +4,9 @@ All notable changes to F&F Thermal. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [0.1.0] - unreleased
+## [Unreleased]
+
+## [0.1.0] - 2026-10-07
 
 First public release.
 
@@ -50,3 +52,6 @@ First public release.
 - Tested on one camera. The FLIR ONE Pro (160×120) should work but has
   never been run.
 - No gallery yet: snapshots are opened from the phone's own gallery.
+
+[Unreleased]: https://github.com/fluxfilament/ff-thermal/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/fluxfilament/ff-thermal/releases/tag/v0.1.0
