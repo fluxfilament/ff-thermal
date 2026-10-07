@@ -1,5 +1,7 @@
 # F&F Thermal — for FLIR ONE
 
+[![CI](https://github.com/fluxfilament/ff-thermal/actions/workflows/ci.yml/badge.svg)](https://github.com/fluxfilament/ff-thermal/actions/workflows/ci.yml)
+
 Open-source Android app for the **FLIR ONE for Android** thermal camera
 (gen 3, USB-C). It talks to the camera directly over USB, without FLIR's
 SDK, and reads the sensor at its native resolution.
@@ -71,6 +73,9 @@ is bundled.
 ./gradlew installDebug         # install on a connected phone
 ./gradlew testDebugUnitTest    # unit tests, no camera needed
 ```
+
+What changed between versions is in [CHANGELOG.md](CHANGELOG.md); how a
+release is built and signed is in [RELEASING.md](RELEASING.md).
 
 `tools/fff_parse.py` prints a camera's constants from a JPEG saved by
 the official app, without exiftool. It leaves out the serial number.

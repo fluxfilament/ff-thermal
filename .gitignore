@@ -11,3 +11,7 @@ local.properties
 app/build/
 app/release/
 __pycache__/
+# Release signing: the key and its passwords stay out of the repository.
+keystore.properties
+*.jks
+*.keystore
