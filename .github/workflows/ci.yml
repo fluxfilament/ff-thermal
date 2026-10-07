@@ -1,0 +1,48 @@
+# Build, unit tests and Android Lint on every push and pull request.
+# Nothing here touches a camera: the tests run on the JVM, with Robolectric
+# standing in for android.graphics where the geometry needs it.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # Also validates the checksum of gradle-wrapper.jar.
+      - uses: gradle/actions/setup-gradle@v6
+
+      # Robolectric's Android image (~230 MB) lives outside Gradle's cache.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-${{ hashFiles('app/build.gradle.kts') }}
+
+      - name: Unit tests, Lint, debug build
+        run: ./gradlew testDebugUnitTest lintDebug assembleDebug
+
+      - name: Keep the reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reports
+          path: |
+            app/build/reports/
+            app/build/test-results/
